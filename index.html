@@ -3,751 +3,988 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-<title>Lubberts Maritiem · VHF & Camera Viewer</title>
-
+<title>Lubberts Maritiem — Terschelling VHF &amp; Camera</title>
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Barlow+Condensed:wght@300;400;600&family=Cinzel:wght@400;600&display=swap" rel="stylesheet">
-
+<script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
 <style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-*{
-  margin:0;
-  padding:0;
-  box-sizing:border-box;
-}
+  :root {
+    --bg:       #0d0f12;
+    --panel:    #141820;
+    --rim:      #1e2430;
+    --steel:    #262e3c;
+    --accent:   #e8a020;
+    --accent2:  #c8781a;
+    --red:      #c0392b;
+    --green:    #27ae60;
+    --text:     #b0bec5;
+    --text-dim: #546e7a;
+    --led-off:  #1a1f28;
+    --led-pwr:  #e8a020;
+    --led-rx:   #27ae60;
+  }
 
-:root{
-  --bg:#0d0f12;
-  --panel:#141820;
-  --rim:#1e2430;
-  --steel:#262e3c;
-  --accent:#e8a020;
-  --accent2:#c8781a;
-  --text:#b0bec5;
-  --text-dim:#546e7a;
-}
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Barlow Condensed', sans-serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 20px;
+    user-select: none;
+  }
 
-body{
-  background:var(--bg);
-  color:var(--text);
-  font-family:'Barlow Condensed',sans-serif;
-  min-height:100vh;
-  display:flex;
-  flex-direction:column;
-  align-items:center;
-  padding:20px;
-}
+  /* ── Header ── */
+  header {
+    width: 100%;
+    max-width: 920px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+    padding: 0 4px;
+  }
 
-header{
-  width:100%;
-  max-width:900px;
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-  margin-bottom:16px;
-}
+  .brand {
+    font-family: 'Cinzel', serif;
+    font-size: 13px;
+    letter-spacing: 3px;
+    color: var(--accent);
+    text-transform: uppercase;
+  }
 
-.brand{
-  font-family:'Cinzel',serif;
-  font-size:14px;
-  letter-spacing:4px;
-  color:var(--accent);
-  text-transform:uppercase;
-}
+  .utc-clock {
+    font-family: 'Orbitron', monospace;
+    font-size: 14px;
+    color: var(--text-dim);
+    letter-spacing: 2px;
+  }
 
-.utc-clock{
-  font-family:'Orbitron',monospace;
-  color:var(--text-dim);
-  font-size:14px;
-}
+  /* ── Shared panel shell ── */
+  .panel {
+    width: 100%;
+    max-width: 920px;
+    background: var(--panel);
+    border: 1px solid var(--rim);
+    border-radius: 12px;
+    box-shadow:
+      0 0 0 1px #0a0c10,
+      0 8px 40px rgba(0,0,0,0.6),
+      inset 0 1px 0 rgba(255,255,255,0.04);
+    padding: 24px;
+    margin-bottom: 20px;
+  }
 
-.radio-body{
-  width:100%;
-  max-width:900px;
-  background:var(--panel);
-  border:1px solid var(--rim);
-  border-radius:12px;
-  padding:24px;
-  display:grid;
-  grid-template-columns:1fr 1fr;
-  gap:16px;
-  box-shadow:
-    0 0 0 1px #0a0c10,
-    0 8px 40px rgba(0,0,0,0.6);
-}
+  /* ── Display row (channel number + scanner) ── */
+  .display-block {
+    background: #080b0e;
+    border: 1px solid #0f1318;
+    border-radius: 8px;
+    padding: 18px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    box-shadow: inset 0 2px 8px rgba(0,0,0,0.5);
+    margin-bottom: 16px;
+  }
 
-.display-block{
-  grid-column:1/-1;
-  background:#080b0e;
-  border-radius:8px;
-  padding:18px 24px;
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-}
+  /* Channel number left */
+  .ch-left { display: flex; flex-direction: column; }
 
-.channel-display{
-  display:flex;
-  flex-direction:column;
-}
+  .channel-label-small {
+    font-size: 10px;
+    letter-spacing: 4px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    margin-bottom: 4px;
+  }
 
-.channel-label-small{
-  font-size:10px;
-  letter-spacing:4px;
-  color:var(--text-dim);
-  text-transform:uppercase;
-  margin-bottom:4px;
-}
+  .channel-number {
+    font-family: 'Orbitron', monospace;
+    font-size: 72px;
+    font-weight: 900;
+    line-height: 1;
+    color: var(--accent);
+    text-shadow: 0 0 20px var(--accent), 0 0 60px rgba(232,160,32,0.25);
+    letter-spacing: -2px;
+  }
 
-.channel-number{
-  font-family:'Orbitron',monospace;
-  font-size:72px;
-  font-weight:900;
-  color:var(--accent);
-  text-shadow:
-    0 0 20px rgba(232,160,32,0.5);
-}
+  .channel-name {
+    font-size: 13px;
+    letter-spacing: 2px;
+    color: var(--text-dim);
+    margin-top: 6px;
+    text-transform: uppercase;
+  }
 
-.channel-name{
-  font-size:13px;
-  letter-spacing:2px;
-  color:var(--text-dim);
-  margin-top:6px;
-  text-transform:uppercase;
-}
+  .led-row {
+    display: flex;
+    gap: 12px;
+    margin-top: 10px;
+  }
 
-.waveform-block{
-  grid-column:1/-1;
-  background:#060809;
-  border-radius:6px;
-  overflow:hidden;
-  height:60px;
-}
+  .led-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 10px;
+    letter-spacing: 2px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+  }
 
-canvas{
-  width:100%;
-  height:60px;
-  display:block;
-}
+  .led {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--led-off);
+    transition: background 0.15s, box-shadow 0.15s;
+  }
+  .led.pwr { background: var(--led-pwr); box-shadow: 0 0 6px var(--led-pwr); }
+  .led.rx  { background: var(--led-rx);  box-shadow: 0 0 6px var(--led-rx); }
 
-.controls-left,
-.controls-right{
-  display:flex;
-  flex-direction:column;
-  gap:16px;
-}
+  /* Scanner grid right */
+  .scanner-panel {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 6px;
+  }
 
-.controls-right{
-  align-items:flex-end;
-}
+  .scanner-label {
+    font-size: 9px;
+    letter-spacing: 3px;
+    color: var(--accent);
+    text-transform: uppercase;
+    animation: blink 1s infinite;
+  }
 
-.ctrl-label{
-  font-size:10px;
-  letter-spacing:3px;
-  color:var(--text-dim);
-  text-transform:uppercase;
-  margin-bottom:8px;
-}
+  .scanner-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
 
-.ch-arrows,
-.preset-row{
-  display:flex;
-  gap:8px;
-}
+  .scan-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    height: 15px;
+  }
 
-.btn{
-  background:var(--steel);
-  border:1px solid #2e3848;
-  color:var(--text);
-  border-radius:6px;
-  padding:8px 16px;
-  cursor:pointer;
-  font-family:inherit;
-  transition:0.15s;
-}
+  .scan-ch-num {
+    font-family: 'Orbitron', monospace;
+    font-size: 9px;
+    color: var(--text-dim);
+    width: 20px;
+    text-align: right;
+    flex-shrink: 0;
+    transition: color 0.1s;
+  }
 
-.btn:hover{
-  background:#2e3848;
-  color:var(--accent);
-}
+  .scan-bar-track {
+    width: 140px;
+    height: 4px;
+    background: #0d1018;
+    border-radius: 2px;
+    overflow: hidden;
+    flex-shrink: 0;
+  }
 
-.btn-arrow{
-  font-size:18px;
-}
+  .scan-bar-fill {
+    height: 100%;
+    width: 0%;
+    background: var(--accent);
+    border-radius: 2px;
+    box-shadow: 0 0 5px var(--accent);
+  }
 
-.btn-preset.active{
-  background:var(--accent2);
-  color:black;
-}
+  .scan-ch-label {
+    font-size: 8px;
+    letter-spacing: 1px;
+    color: var(--text-dim);
+    white-space: nowrap;
+    text-transform: uppercase;
+    transition: color 0.1s;
+    width: 130px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    flex-shrink: 0;
+  }
 
-.volume-slider{
-  width:140px;
-}
+  .scan-row.current .scan-ch-num  { color: var(--accent); }
+  .scan-row.current .scan-ch-label { color: var(--accent); }
 
-.camera-container{
-  grid-column:1/-1;
-  border-radius:10px;
-  overflow:hidden;
-  border:1px solid #0f1318;
-  background:black;
-}
+  /* ── Waveform ── */
+  .waveform-block {
+    background: #060809;
+    border-radius: 6px;
+    border: 1px solid #0f1318;
+    overflow: hidden;
+    height: 56px;
+    margin-bottom: 16px;
+  }
 
-.camera-video{
-  width:100%;
-  aspect-ratio:16/9;
-  background:black;
-}
+  canvas#waveform { display: block; width: 100%; height: 56px; }
 
-.boot-overlay{
-  position:fixed;
-  inset:0;
-  background:#060809;
-  display:flex;
-  justify-content:center;
-  align-items:center;
-  z-index:999;
-  transition:opacity 0.5s;
-}
+  /* ── Section divider ── */
+  .divider {
+    height: 1px;
+    background: linear-gradient(to right, transparent, var(--rim), transparent);
+    margin-bottom: 16px;
+  }
 
-.boot-overlay.hidden{
-  opacity:0;
-  pointer-events:none;
-}
+  /* ── Controls row (scan status + smeter + volume) ── */
+  .controls-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
 
-.boot-content{
-  display:flex;
-  flex-direction:column;
-  align-items:center;
-  gap:16px;
-}
+  .scan-status {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
 
-.boot-brand{
-  font-family:'Cinzel',serif;
-  font-size:18px;
-  letter-spacing:6px;
-  color:var(--accent);
-}
+  .scan-indicator {
+    font-family: 'Orbitron', monospace;
+    font-size: 10px;
+    letter-spacing: 3px;
+    color: var(--accent);
+    animation: blink 0.9s infinite;
+    text-transform: uppercase;
+  }
 
-.boot-channel{
-  font-family:'Orbitron',monospace;
-  font-size:80px;
-  color:var(--accent);
-}
+  .scan-subtitle {
+    font-size: 10px;
+    letter-spacing: 2px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+  }
 
-select{
-  appearance:none;
-}
+  /* S-meter */
+  .smeter-block { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+  .smeter-label { font-size: 10px; letter-spacing: 3px; color: var(--text-dim); text-transform: uppercase; }
+  .smeter-bars  { display: flex; gap: 3px; align-items: flex-end; }
+  .smeter-bar   { width: 10px; border-radius: 2px 2px 0 0; opacity: 0.15; transition: opacity 0.1s; }
+  .smeter-bar.active { opacity: 1; }
 
-audio{
-  display:none;
-}
+  /* Volume knob */
+  .volume-block { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+  .ctrl-label   { font-size: 10px; letter-spacing: 3px; color: var(--text-dim); text-transform: uppercase; text-align: center; }
 
+  .knob-container { position: relative; width: 72px; height: 72px; cursor: ns-resize; }
+  .knob-bg {
+    width: 72px; height: 72px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 35%, #2e3848, #141820);
+    border: 2px solid #2e3848;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.05);
+  }
+  .knob-indicator {
+    position: absolute;
+    top: 8px; left: 50%;
+    width: 3px; height: 12px;
+    background: var(--accent);
+    border-radius: 2px;
+    transform-origin: 50% 28px;
+  }
+  .volume-slider {
+    width: 80px;
+    -webkit-appearance: none;
+    height: 3px;
+    border-radius: 2px;
+    background: var(--steel);
+    outline: none;
+  }
+  .volume-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 14px; height: 14px;
+    border-radius: 50%;
+    background: var(--accent);
+    cursor: pointer;
+    box-shadow: 0 0 6px var(--accent);
+  }
+
+  /* ── Camera panel ── */
+  .camera-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+  }
+
+  .camera-title {
+    font-family: 'Cinzel', serif;
+    font-size: 12px;
+    letter-spacing: 4px;
+    color: var(--accent);
+    text-transform: uppercase;
+  }
+
+  .camera-controls {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+
+  .cam-live-badge {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 10px;
+    letter-spacing: 2px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+  }
+
+  .cam-select {
+    background: var(--steel);
+    border: 1px solid #2e3848;
+    color: var(--accent);
+    font-family: 'Orbitron', monospace;
+    font-size: 11px;
+    letter-spacing: 2px;
+    border-radius: 6px;
+    padding: 8px 30px 8px 14px;
+    cursor: pointer;
+    outline: none;
+    transition: border-color 0.15s;
+    -webkit-appearance: none;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23e8a020'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    background-color: var(--steel);
+  }
+  .cam-select:hover { border-color: var(--accent); }
+
+  /* Camera viewport */
+  .camera-viewport {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 16/9;
+    background: #040608;
+    border-radius: 8px;
+    border: 1px solid #0f1318;
+    overflow: hidden;
+    box-shadow: inset 0 2px 8px rgba(0,0,0,0.5);
+  }
+
+  .camera-viewport video {
+    width: 100%; height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+
+  /* CRT scanlines */
+  .camera-viewport::after {
+    content: '';
+    position: absolute; inset: 0;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent, transparent 2px,
+      rgba(0,0,0,0.07) 2px, rgba(0,0,0,0.07) 4px
+    );
+    pointer-events: none;
+    z-index: 2;
+  }
+
+  /* Corner brackets */
+  .cam-corner { position: absolute; width: 20px; height: 20px; z-index: 3; pointer-events: none; }
+  .cam-corner.tl { top: 12px;    left: 12px;  border-top: 2px solid var(--accent); border-left:  2px solid var(--accent); }
+  .cam-corner.tr { top: 12px;    right: 12px; border-top: 2px solid var(--accent); border-right: 2px solid var(--accent); }
+  .cam-corner.bl { bottom: 12px; left: 12px;  border-bottom: 2px solid var(--accent); border-left:  2px solid var(--accent); }
+  .cam-corner.br { bottom: 12px; right: 12px; border-bottom: 2px solid var(--accent); border-right: 2px solid var(--accent); }
+
+  /* Overlay badges */
+  .cam-overlay-top {
+    position: absolute;
+    top: 14px; left: 50%;
+    transform: translateX(-50%);
+    z-index: 4;
+    display: flex; align-items: center; gap: 8px;
+    pointer-events: none;
+  }
+
+  .cam-rec-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--red);
+    box-shadow: 0 0 6px var(--red);
+    animation: blink 1.2s infinite;
+  }
+
+  .cam-name-badge {
+    font-family: 'Orbitron', monospace;
+    font-size: 11px;
+    letter-spacing: 3px;
+    color: var(--accent);
+    background: rgba(8,11,14,0.78);
+    padding: 4px 10px;
+    border-radius: 3px;
+    border: 1px solid rgba(232,160,32,0.28);
+    text-transform: uppercase;
+  }
+
+  .cam-overlay-bottom {
+    position: absolute;
+    bottom: 12px; left: 16px; right: 16px;
+    z-index: 4;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    pointer-events: none;
+  }
+
+  .cam-location {
+    font-size: 11px;
+    letter-spacing: 2px;
+    color: rgba(176,190,197,0.65);
+    text-transform: uppercase;
+  }
+
+  .cam-timestamp {
+    font-family: 'Orbitron', monospace;
+    font-size: 10px;
+    color: rgba(232,160,32,0.55);
+    letter-spacing: 1px;
+  }
+
+  /* Loading state */
+  .cam-loading {
+    position: absolute; inset: 0;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    gap: 12px;
+    z-index: 5;
+    background: #040608;
+    transition: opacity 0.4s;
+  }
+  .cam-loading.hidden { opacity: 0; pointer-events: none; }
+
+  .cam-loading-icon {
+    font-family: 'Orbitron', monospace;
+    font-size: 36px;
+    color: var(--text-dim);
+    animation: pulse 1.4s infinite;
+  }
+
+  .cam-loading-text {
+    font-size: 11px;
+    letter-spacing: 3px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+  }
+
+  /* Boot overlay */
+  .boot-overlay {
+    position: fixed; inset: 0;
+    background: #060809;
+    display: flex; align-items: center; justify-content: center;
+    z-index: 200;
+    transition: opacity 0.5s;
+  }
+  .boot-overlay.hidden { opacity: 0; pointer-events: none; }
+
+  .boot-content {
+    display: flex; flex-direction: column; align-items: center; gap: 16px;
+  }
+  .boot-brand {
+    font-family: 'Cinzel', serif;
+    font-size: 18px; letter-spacing: 6px;
+    color: var(--accent); text-transform: uppercase;
+  }
+  .boot-channel {
+    font-family: 'Orbitron', monospace;
+    font-size: 80px; font-weight: 900;
+    color: var(--accent);
+    text-shadow: 0 0 30px var(--accent);
+  }
+  .boot-sub {
+    font-size: 11px; letter-spacing: 4px;
+    color: var(--text-dim); text-transform: uppercase;
+  }
+
+  /* Animations */
+  @keyframes blink { 0%,100%{ opacity:1; } 50%{ opacity:0.15; } }
+  @keyframes pulse { 0%,100%{ opacity:0.35; } 50%{ opacity:1; } }
+
+  audio { display: none; }
+
+  footer {
+    width: 100%; max-width: 920px;
+    text-align: center;
+    padding: 12px 0 20px;
+    font-size: 10px; letter-spacing: 3px;
+    color: var(--text-dim); text-transform: uppercase;
+  }
 </style>
 </head>
-
 <body>
 
+<!-- Boot overlay -->
 <div class="boot-overlay" id="bootOverlay">
-
   <div class="boot-content">
-
-    <div class="boot-brand">
-      Lubberts Maritiem
-    </div>
-
-    <div class="boot-channel" id="bootCh">
-      01
-    </div>
-
-    <div class="channel-name">
-      VHF Marine Initializing
-    </div>
-
+    <div class="boot-brand">Lubberts Maritiem</div>
+    <div class="boot-channel" id="bootCh">01</div>
+    <div class="boot-sub">VHF Marine Radio — Terschelling</div>
   </div>
-
 </div>
 
+<!-- Header -->
 <header>
-
-  <div class="brand">
-    Lubberts Maritiem · VHF
-  </div>
-
-  <div class="utc-clock" id="utcClock">
-    00:00:00 UTC
-  </div>
-
+  <div class="brand">Lubberts Maritiem · VHF Terschelling</div>
+  <div class="utc-clock" id="utcClock">00:00:00 UTC</div>
 </header>
 
-<div class="radio-body">
+<!-- ═══════════════════════════ RADIO PANEEL ═══════════════════════════ -->
+<div class="panel">
 
+  <!-- Display: channel + scanner -->
   <div class="display-block">
 
-    <div class="channel-display">
-
-      <div class="channel-label-small">
-        Kanaal
+    <div class="ch-left">
+      <div class="channel-label-small">Kanaal</div>
+      <div class="channel-number" id="chDisplay">16</div>
+      <div class="channel-name" id="chName">NOODKANAAL</div>
+      <div class="led-row">
+        <div class="led-item"><div class="led pwr"></div>PWR</div>
+        <div class="led-item"><div class="led rx" id="ledRx"></div>RX</div>
+        <div class="led-item"><div class="led" id="ledTx"></div>TX</div>
       </div>
+    </div>
 
-      <div class="channel-number" id="chDisplay">
-        02
-      </div>
-
-      <div class="channel-name" id="chName">
-        HAVENVERKEER / PORT OPS
-      </div>
-
+    <div class="scanner-panel">
+      <div class="scanner-label">▶ Scanner actief</div>
+      <div class="scanner-grid" id="scannerGrid"></div>
     </div>
 
   </div>
 
+  <!-- Waveform -->
   <div class="waveform-block">
     <canvas id="waveform"></canvas>
   </div>
 
-  <div class="controls-left">
+  <div class="divider"></div>
 
-    <div>
+  <!-- Bottom controls -->
+  <div class="controls-row">
 
-      <div class="ctrl-label">
-        Kanaal
-      </div>
-
-      <div class="ch-arrows">
-
-        <button class="btn btn-arrow" onclick="changeChannel(1)">
-          ▲
-        </button>
-
-        <button class="btn btn-arrow" onclick="changeChannel(-1)">
-          ▼
-        </button>
-
-      </div>
-
+    <div class="scan-status">
+      <div class="scan-indicator">SCANNING</div>
+      <div class="scan-subtitle">Terschelling VHF</div>
     </div>
 
-    <div>
-
-      <div class="ctrl-label">
-        Snelkies
-      </div>
-
-      <div class="preset-row">
-
-        <button class="btn btn-preset" onclick="setChannel(16)">
-          16
-        </button>
-
-        <button class="btn btn-preset" onclick="setChannel(9)">
-          09
-        </button>
-
-        <button class="btn btn-preset" onclick="setChannel(67)">
-          67
-        </button>
-
-        <button class="btn btn-preset" onclick="setChannel(70)">
-          70
-        </button>
-
-        <button class="btn btn-preset active" onclick="setChannel(2)">
-          02
-        </button>
-
-      </div>
-
+    <div class="smeter-block">
+      <div class="smeter-label">Signal</div>
+      <div class="smeter-bars" id="smeterBars"></div>
     </div>
 
-  </div>
-
-  <div class="controls-right">
-
-    <div>
-
-      <div class="ctrl-label">
-        Volume
+    <div class="volume-block">
+      <div class="ctrl-label">Volume</div>
+      <div class="knob-container" id="knob">
+        <div class="knob-bg"></div>
+        <div class="knob-indicator" id="knobIndicator"></div>
       </div>
-
-      <input
-        type="range"
-        min="0"
-        max="100"
-        value="80"
-        class="volume-slider"
-        id="volumeSlider">
-
+      <input type="range" class="volume-slider" id="volSlider" min="0" max="100" value="80"
+             oninput="setVolume(this.value)">
     </div>
 
   </div>
 
 </div>
 
-<!-- CAMERA VIEWER -->
+<!-- ═══════════════════════════ CAMERA PANEEL ═══════════════════════════ -->
+<div class="panel">
 
-<div class="radio-body" style="margin-top:16px;">
-
-  <div class="display-block">
-
-    <div class="channel-display">
-
-      <div class="channel-label-small">
-        Camera Viewer
+  <div class="camera-header">
+    <div class="camera-title">Havencamera — Live</div>
+    <div class="camera-controls">
+      <div class="cam-live-badge">
+        <div class="led rx"></div>LIVE
       </div>
-
-      <div class="channel-number" style="font-size:42px;">
-        LIVE
-      </div>
-
-      <div class="channel-name">
-        Haven Camera Observatie
-      </div>
-
-    </div>
-
-    <div style="display:flex; flex-direction:column; gap:10px; align-items:flex-end;">
-
-      <label class="ctrl-label">
-        Camera Selectie
-      </label>
-
-      <select
-        id="cameraSelect"
-        class="btn"
-        onchange="switchCamera()">
-
-        <option value="cam1">
-          CAM1
-        </option>
-
-        <option value="cam2">
-          CAM2
-        </option>
-
+      <select class="cam-select" id="camSelect" onchange="switchCamera()">
+        <option value="cam1">CAM 1 — Havenkom</option>
+        <option value="cam2">CAM 2 — Veerkade</option>
       </select>
-
     </div>
-
   </div>
 
-  <div class="camera-container">
+  <div class="camera-viewport">
+    <div class="cam-corner tl"></div>
+    <div class="cam-corner tr"></div>
+    <div class="cam-corner bl"></div>
+    <div class="cam-corner br"></div>
 
-    <video
-      id="cameraPlayer"
-      class="camera-video"
-      controls
-      autoplay
-      muted
-      playsinline>
-    </video>
+    <div class="cam-overlay-top">
+      <div class="cam-rec-dot"></div>
+      <div class="cam-name-badge" id="camNameBadge">CAM 1 — Havenkom</div>
+    </div>
 
+    <div class="cam-overlay-bottom">
+      <div class="cam-location" id="camLocation">Terschelling · Havenkom</div>
+      <div class="cam-timestamp" id="camTimestamp">--:--:-- UTC</div>
+    </div>
+
+    <video id="camVideo" muted playsinline autoplay></video>
+
+    <div class="cam-loading" id="camLoading">
+      <div class="cam-loading-icon">◎</div>
+      <div class="cam-loading-text" id="camLoadingText">Stream verbinden…</div>
+    </div>
   </div>
 
 </div>
 
-<audio
-  id="audioPlayer"
-  preload="none"
-  crossorigin="anonymous">
-</audio>
+<footer>Lubberts Maritiem · VHF Marine Radio Network · Terschelling</footer>
 
-<script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+<audio id="audioPlayer" preload="none"></audio>
 
 <script>
+// ── Configuratie ─────────────────────────────────────────────────────────────
+const STREAM_URL = 'https://www.tbandsma.nl:8443';
 
-const STREAM_URL =
-'https://www.tbandsma.nl:8443/;';
-
-const CAMERA_STREAMS = {
-
-  cam1:
-  'https://584b389d712f9.streamlock.net/live-cam/havenkom-ts/playlist.m3u8?wowzatokenendtime=1778523889&wowzatokenhash=q0vYSOilqvaYyLz1cLGlqF4kwgzOO2FPcQbyXhyMnm4=&wowzatokenstarttime=1778522029',
-
-  cam2:
-  'https://5b8d2cbe62ad6.streamlock.net/live/veerkade.stream/playlist.m3u8?wowzatokenendtime=1778525745&wowzatokenhash=I7xqmNNsEObakNLCs_EodQ471UgHSF1w1XbxDIvy_EE=&wowzatokenstarttime=1778522085'
-
+const CAMERAS = {
+  cam1: {
+    url:      'https://584b389d712f9.streamlock.net/live-cam/havenkom-ts/playlist.m3u8?wowzatokenendtime=1778523889&wowzatokenhash=q0vYSOilqvaYyLz1cLGlqF4kwgzOO2FPcQbyXhyMnm4=&wowzatokenstarttime=1778522029',
+    name:     'CAM 1 — Havenkom',
+    location: 'Terschelling · Havenkom',
+  },
+  cam2: {
+    url:      'https://5b8d2cbe62ad6.streamlock.net/live/veerkade.stream/playlist.m3u8?wowzatokenendtime=1778525745&wowzatokenhash=I7xqmNNsEObakNLCs_EodQ471UgHSF1w1XbxDIvy_EE=&wowzatokenstarttime=1778522085',
+    name:     'CAM 2 — Veerkade',
+    location: 'Terschelling · Veerkade',
+  }
 };
 
-const CH_LABELS = {
-
-  2:'HAVENVERKEER / PORT OPS',
-  9:'HAVENCOÖRDINATIE',
-  16:'INTL NOODKANAAL',
-  67:'HAVENVERKEER (NL)',
-  70:'DSC NOODOPROEP'
-
-};
-
-let currentChannel = 2;
-
-const audioPlayer =
-document.getElementById('audioPlayer');
-
-const volumeSlider =
-document.getElementById('volumeSlider');
-
-const chDisplay =
-document.getElementById('chDisplay');
-
-const chName =
-document.getElementById('chName');
-
-function renderChannel(ch){
-
-  chDisplay.textContent =
-  String(ch).padStart(2,'0');
-
-  chName.textContent =
-  CH_LABELS[ch] || 'VHF MARINE KANAAL';
-
-  document.querySelectorAll('.btn-preset')
-  .forEach(btn=>{
-
-    btn.classList.toggle(
-      'active',
-      parseInt(btn.textContent) === ch
-    );
-
-  });
-
-}
-
-function setChannel(ch){
-
-  currentChannel = ch;
-
-  renderChannel(ch);
-
-}
-
-function changeChannel(dir){
-
-  currentChannel += dir;
-
-  if(currentChannel < 1){
-    currentChannel = 88;
-  }
-
-  if(currentChannel > 88){
-    currentChannel = 1;
-  }
-
-  renderChannel(currentChannel);
-
-}
-
-function updateClock(){
-
-  const now = new Date();
-
-  const hh =
-  String(now.getUTCHours())
-  .padStart(2,'0');
-
-  const mm =
-  String(now.getUTCMinutes())
-  .padStart(2,'0');
-
-  const ss =
-  String(now.getUTCSeconds())
-  .padStart(2,'0');
-
-  document.getElementById('utcClock')
-  .textContent =
-  `${hh}:${mm}:${ss} UTC`;
-
-}
-
-setInterval(updateClock,1000);
-
-updateClock();
-
-volumeSlider.addEventListener('input',()=>{
-
-  audioPlayer.volume =
-  volumeSlider.value / 100;
-
-});
-
-audioPlayer.src = STREAM_URL;
-
-audioPlayer.volume = 0.8;
-
-audioPlayer.addEventListener('error',(e)=>{
-
-  console.error(
-    'Audio stream fout:',
-    e
-  );
-
-});
-
-audioPlayer.play().catch(err=>{
-
-  console.log(
-    'Autoplay geblokkeerd:',
-    err
-  );
-
-  document.addEventListener('click',()=>{
-
-    audioPlayer.play();
-
-  },{once:true});
-
-});
-
-const canvas =
-document.getElementById('waveform');
-
-const ctx =
-canvas.getContext('2d');
-
-function resizeCanvas(){
-
-  canvas.width =
-  canvas.offsetWidth;
-
-  canvas.height =
-  canvas.offsetHeight;
-
-}
-
-window.addEventListener(
-  'resize',
-  resizeCanvas
-);
-
-resizeCanvas();
-
-function animateWave(){
-
-  requestAnimationFrame(
-    animateWave
-  );
-
-  ctx.clearRect(
-    0,
-    0,
-    canvas.width,
-    canvas.height
-  );
-
-  ctx.beginPath();
-
-  ctx.strokeStyle =
-  'rgba(232,160,32,0.8)';
-
-  for(let x=0;x<canvas.width;x++){
-
-    const y =
-    canvas.height/2 +
-    Math.sin(
-      x*0.02 +
-      Date.now()*0.01
-    ) * 10;
-
-    if(x===0){
-      ctx.moveTo(x,y);
-    }else{
-      ctx.lineTo(x,y);
-    }
-
-  }
-
-  ctx.stroke();
-
-}
-
-animateWave();
-
-(function boot(){
-
-  const overlay =
-  document.getElementById(
-    'bootOverlay'
-  );
-
-  const bootCh =
-  document.getElementById(
-    'bootCh'
-  );
-
+// ── Scankanalen Terschelling ──────────────────────────────────────────────────
+const SCAN_CHANNELS = [
+  { ch: '00', label: 'Onderling KNRM' },
+  { ch: '02', label: 'VC Brandaris' },
+  { ch: '04', label: 'Meldpost Waddenzee' },
+  { ch: '08', label: 'Marifoon verkeer' },
+  { ch: '10', label: 'Aanroep binnenwater' },
+  { ch: '12', label: 'Havendienst' },
+  { ch: '16', label: 'Noodkanaal' },
+  { ch: '19', label: 'Loods kanaal' },
+  { ch: '63', label: 'VTS off Texel' },
+  { ch: '67', label: 'Search & Rescue' },
+  { ch: '97', label: 'Kustwacht vliegtuig' },
+];
+
+// ── State ─────────────────────────────────────────────────────────────────────
+let scanIdx        = SCAN_CHANNELS.findIndex(c => c.ch === '16');
+let volume         = 80;
+let knobAngle      = 135;
+let audioCtx       = null;
+let analyser       = null;
+let sourceNode     = null;
+let knobDragging   = false;
+let knobStartY     = 0;
+let knobStartAngle = 0;
+let currentHls     = null;
+let scanFillTimer  = null;
+
+// ── DOM refs ──────────────────────────────────────────────────────────────────
+const chDisplay   = document.getElementById('chDisplay');
+const chName      = document.getElementById('chName');
+const audioPlayer = document.getElementById('audioPlayer');
+const volSlider   = document.getElementById('volSlider');
+const knobEl      = document.getElementById('knob');
+const knobInd     = document.getElementById('knobIndicator');
+const ledRx       = document.getElementById('ledRx');
+const canvas      = document.getElementById('waveform');
+const ctx2d       = canvas.getContext('2d');
+const camVideo    = document.getElementById('camVideo');
+const camLoading  = document.getElementById('camLoading');
+const camLoadingText = document.getElementById('camLoadingText');
+const camBadge    = document.getElementById('camNameBadge');
+const camLoc      = document.getElementById('camLocation');
+const camTs       = document.getElementById('camTimestamp');
+
+// ── Boot sequence ─────────────────────────────────────────────────────────────
+(function boot() {
+  const overlay = document.getElementById('bootOverlay');
+  const bootCh  = document.getElementById('bootCh');
   let n = 1;
-
-  const iv = setInterval(()=>{
-
-    bootCh.textContent =
-    String(n).padStart(2,'0');
-
+  const iv = setInterval(() => {
+    bootCh.textContent = String(n).padStart(2, '0');
     n++;
-
-    if(n>16){
-
+    if (n > 16) {
       clearInterval(iv);
-
-      setTimeout(()=>{
-
-        overlay.classList.add(
-          'hidden'
-        );
-
-      },700);
-
+      setTimeout(() => {
+        bootCh.textContent = '16';
+        setTimeout(() => {
+          overlay.classList.add('hidden');
+          buildScannerGrid();
+          startScanner();
+          buildSmeter();
+          animateSmeter();
+          startAudio();
+          switchCamera();
+        }, 600);
+      }, 300);
     }
-
-  },80);
-
+  }, 80);
 })();
 
-function switchCamera(){
-
-  const video =
-  document.getElementById(
-    'cameraPlayer'
-  );
-
-  const selected =
-  document.getElementById(
-    'cameraSelect'
-  ).value;
-
-  const url =
-  CAMERA_STREAMS[selected];
-
-  if(window.currentHls){
-
-    window.currentHls.destroy();
-
-  }
-
-  if(Hls.isSupported()){
-
-    const hls = new Hls();
-
-    hls.loadSource(url);
-
-    hls.attachMedia(video);
-
-    window.currentHls = hls;
-
-  }else if(
-    video.canPlayType(
-      'application/vnd.apple.mpegurl'
-    )
-  ){
-
-    video.src = url;
-
-  }
-
+// ── Scanner grid opbouwen ─────────────────────────────────────────────────────
+function buildScannerGrid() {
+  const grid = document.getElementById('scannerGrid');
+  SCAN_CHANNELS.forEach((c, i) => {
+    const row = document.createElement('div');
+    row.className = 'scan-row';
+    row.id = 'scanrow_' + i;
+    row.innerHTML =
+      `<div class="scan-ch-num">${c.ch}</div>` +
+      `<div class="scan-bar-track"><div class="scan-bar-fill" id="scanfill_${i}"></div></div>` +
+      `<div class="scan-ch-label">${c.label}</div>`;
+    grid.appendChild(row);
+  });
 }
 
-switchCamera();
+// ── Scanner animatie ──────────────────────────────────────────────────────────
+function advanceScan() {
+  // Reset vorige rij
+  const prevFill = document.getElementById('scanfill_' + scanIdx);
+  if (prevFill) prevFill.style.width = '0%';
+  const prevRow = document.getElementById('scanrow_' + scanIdx);
+  if (prevRow) prevRow.classList.remove('current');
 
-renderChannel(currentChannel);
+  // Volgende kanaal (cyclisch)
+  scanIdx = (scanIdx + 1) % SCAN_CHANNELS.length;
+  const ch = SCAN_CHANNELS[scanIdx];
 
+  // Update hoofddisplay
+  chDisplay.textContent = ch.ch;
+  chName.textContent    = ch.label.toUpperCase();
+
+  // Markeer huidige rij
+  const row  = document.getElementById('scanrow_' + scanIdx);
+  const fill = document.getElementById('scanfill_' + scanIdx);
+  if (row) row.classList.add('current');
+
+  // Animeer fill-balk
+  let progress = 0;
+  const TOTAL_MS = 1500;
+  const STEP_MS  = 28;
+  const steps    = TOTAL_MS / STEP_MS;
+
+  clearInterval(scanFillTimer);
+  scanFillTimer = setInterval(() => {
+    progress += 100 / steps;
+    if (fill) fill.style.width = Math.min(progress, 100) + '%';
+
+    if (progress >= 100) {
+      clearInterval(scanFillTimer);
+      // Korte RX flash
+      ledRx.style.background = 'var(--led-rx)';
+      ledRx.style.boxShadow  = '0 0 6px var(--led-rx)';
+      setTimeout(() => {
+        ledRx.style.background = '';
+        ledRx.style.boxShadow  = '';
+      }, 180);
+      setTimeout(advanceScan, 250);
+    }
+  }, STEP_MS);
+}
+
+function startScanner() {
+  // Zet startkanaal op CH16
+  chDisplay.textContent = '16';
+  chName.textContent    = 'NOODKANAAL';
+  setTimeout(advanceScan, 800);
+}
+
+// ── Audio ─────────────────────────────────────────────────────────────────────
+function startAudio() {
+  audioPlayer.src    = STREAM_URL;
+  audioPlayer.volume = volume / 100;
+  audioPlayer.load();
+  audioPlayer.play().catch(() => {
+    document.addEventListener('click', () => audioPlayer.play(), { once: true });
+  });
+
+  try {
+    audioCtx   = new (window.AudioContext || window.webkitAudioContext)();
+    analyser   = audioCtx.createAnalyser();
+    analyser.fftSize = 256;
+    sourceNode = audioCtx.createMediaElementSource(audioPlayer);
+    sourceNode.connect(analyser);
+    analyser.connect(audioCtx.destination);
+  } catch(e) {}
+
+  drawWaveform();
+
+  audioPlayer.addEventListener('playing', () => {
+    ledRx.classList.add('rx');
+  });
+  audioPlayer.addEventListener('pause', () => {
+    ledRx.classList.remove('rx');
+  });
+}
+
+// ── Waveform ──────────────────────────────────────────────────────────────────
+function resizeCanvas() {
+  canvas.width  = canvas.offsetWidth;
+  canvas.height = canvas.offsetHeight;
+}
+window.addEventListener('resize', resizeCanvas);
+resizeCanvas();
+
+function drawWaveform() {
+  requestAnimationFrame(drawWaveform);
+  const W = canvas.width, H = canvas.height;
+  ctx2d.clearRect(0, 0, W, H);
+
+  if (!analyser) {
+    // Idle flatline met subtiele ruis
+    ctx2d.strokeStyle = '#1a2030';
+    ctx2d.lineWidth   = 1;
+    ctx2d.beginPath();
+    for (let x = 0; x < W; x++) {
+      const y = H / 2 + (Math.random() - 0.5) * 2;
+      x === 0 ? ctx2d.moveTo(x, y) : ctx2d.lineTo(x, y);
+    }
+    ctx2d.stroke();
+    return;
+  }
+
+  const data = new Uint8Array(analyser.frequencyBinCount);
+  analyser.getByteTimeDomainData(data);
+
+  ctx2d.strokeStyle = 'rgba(232,160,32,0.75)';
+  ctx2d.lineWidth   = 1.5;
+  ctx2d.shadowColor = 'rgba(232,160,32,0.35)';
+  ctx2d.shadowBlur  = 4;
+  ctx2d.beginPath();
+
+  const sw = W / data.length;
+  let x = 0;
+  for (let i = 0; i < data.length; i++) {
+    const y = (data[i] / 128.0 * H) / 2;
+    i === 0 ? ctx2d.moveTo(x, y) : ctx2d.lineTo(x, y);
+    x += sw;
+  }
+  ctx2d.stroke();
+  ctx2d.shadowBlur = 0;
+}
+
+// ── S-meter ───────────────────────────────────────────────────────────────────
+function buildSmeter() {
+  const bars = document.getElementById('smeterBars');
+  bars.innerHTML = '';
+  const heights = [8,10,14,18,22,26,30,34,38,42];
+  const colors  = ['#27ae60','#27ae60','#27ae60','#27ae60','#27ae60',
+                   '#f39c12','#f39c12','#e74c3c','#e74c3c','#e74c3c'];
+  heights.forEach((h, i) => {
+    const b = document.createElement('div');
+    b.className = 'smeter-bar';
+    b.style.height     = h + 'px';
+    b.style.background = colors[i];
+    b.dataset.index    = i;
+    bars.appendChild(b);
+  });
+}
+
+function animateSmeter() {
+  setInterval(() => {
+    let level = 0;
+    if (analyser) {
+      const data = new Uint8Array(analyser.frequencyBinCount);
+      analyser.getByteFrequencyData(data);
+      const avg = data.reduce((a, b) => a + b, 0) / data.length;
+      level = Math.round((avg / 255) * 10);
+    } else {
+      level = Math.floor(Math.random() * 3);
+    }
+    document.querySelectorAll('.smeter-bar').forEach(b => {
+      b.classList.toggle('active', parseInt(b.dataset.index) < level);
+    });
+  }, 100);
+}
+
+// ── Volume ────────────────────────────────────────────────────────────────────
+function setVolume(v) {
+  volume = parseInt(v);
+  audioPlayer.volume = volume / 100;
+  volSlider.value    = volume;
+  knobAngle = -135 + (volume / 100) * 270;
+  knobInd.style.transform = `translateX(-50%) rotate(${knobAngle}deg)`;
+}
+
+knobEl.addEventListener('mousedown', e => {
+  knobDragging   = true;
+  knobStartY     = e.clientY;
+  knobStartAngle = knobAngle;
+  e.preventDefault();
+});
+document.addEventListener('mousemove', e => {
+  if (!knobDragging) return;
+  const delta = knobStartY - e.clientY;
+  let angle   = knobStartAngle + delta * 1.5;
+  angle       = Math.max(-135, Math.min(135, angle));
+  knobAngle   = angle;
+  setVolume(Math.round(((angle + 135) / 270) * 100));
+});
+document.addEventListener('mouseup', () => { knobDragging = false; });
+
+setVolume(80);
+
+// ── Camera ────────────────────────────────────────────────────────────────────
+function switchCamera() {
+  const key = document.getElementById('camSelect').value;
+  const cam = CAMERAS[key];
+
+  camBadge.textContent    = cam.name;
+  camLoc.textContent      = cam.location;
+  camLoadingText.textContent = 'Stream verbinden…';
+  camLoading.classList.remove('hidden');
+
+  if (currentHls) { currentHls.destroy(); currentHls = null; }
+
+  if (typeof Hls !== 'undefined' && Hls.isSupported()) {
+    const hls = new Hls({ liveSyncDurationCount: 3, liveMaxLatencyDurationCount: 6 });
+    hls.loadSource(cam.url);
+    hls.attachMedia(camVideo);
+    hls.on(Hls.Events.MANIFEST_PARSED, () => {
+      camVideo.play().catch(() => {});
+      camLoading.classList.add('hidden');
+    });
+    hls.on(Hls.Events.ERROR, (ev, data) => {
+      if (data.fatal) camLoadingText.textContent = 'Stream tijdelijk niet beschikbaar';
+    });
+    currentHls = hls;
+  } else if (camVideo.canPlayType('application/vnd.apple.mpegurl')) {
+    camVideo.src = cam.url;
+    camVideo.addEventListener('loadedmetadata', () => {
+      camVideo.play().catch(() => {});
+      camLoading.classList.add('hidden');
+    }, { once: true });
+  } else {
+    camLoadingText.textContent = 'Browser niet ondersteund';
+  }
+}
+
+// ── Klokken ───────────────────────────────────────────────────────────────────
+function utcString() {
+  const now = new Date();
+  return [now.getUTCHours(), now.getUTCMinutes(), now.getUTCSeconds()]
+    .map(n => String(n).padStart(2, '0')).join(':') + ' UTC';
+}
+
+setInterval(() => {
+  document.getElementById('utcClock').textContent = utcString();
+  camTs.textContent = utcString();
+}, 1000);
+
+document.getElementById('utcClock').textContent = utcString();
+camTs.textContent = utcString();
 </script>
-
 </body>
 </html>
