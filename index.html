@@ -643,11 +643,11 @@
 
 <footer>Lubberts Maritiem · VHF Marine Radio Network · Terschelling</footer>
 
-<audio id="audioPlayer" preload="none"></audio>
+<audio id="audioPlayer" preload="none" crossorigin="anonymous"></audio>
 
 <script>
 // ── Configuratie ─────────────────────────────────────────────────────────────
-const STREAM_URL = 'https://www.tbandsma.nl:8443';
+const STREAM_URL = 'https://www.tbandsma.nl:8443/;';
 
 const CAMERAS = {
   cam1: {
@@ -804,10 +804,18 @@ function startScanner() {
 // ── Audio ─────────────────────────────────────────────────────────────────────
 function startAudio() {
   audioPlayer.src    = STREAM_URL;
-  audioPlayer.volume = volume / 100;
+  audioPlayer.volume = 0.8;
   audioPlayer.load();
-  audioPlayer.play().catch(() => {
-    document.addEventListener('click', () => audioPlayer.play(), { once: true });
+
+  audioPlayer.addEventListener('error', (e) => {
+    console.error('Audio stream fout:', e);
+  });
+
+  audioPlayer.play().catch(err => {
+    console.log('Autoplay geblokkeerd:', err);
+    document.addEventListener('click', () => {
+      audioPlayer.play();
+    }, { once: true });
   });
 
   try {
