@@ -1031,19 +1031,27 @@ setInterval(() => {
 document.getElementById('utcClock').textContent = utcString();
 camTs.textContent = utcString();
 
-// ── KNRM Leaflet kaart ────────────────────────────────────────────────────────
+// ── KNRM AIS tracker ─────────────────────────────────────────────────────────
+//
+// Vul hier je gratis aisstream.io API key in.
+// Account aanmaken: https://aisstream.io  (GitHub login, gratis)
+// Zonder key werkt de kaart wel, maar zonder live schipsposities.
+//
+const AISSTREAM_KEY = 'a1e0015964729bf568c90f84a32ea7b1c5f2a859';   // ← jouw key hier
+
 const VESSELS = [
   { mmsi: '244413000', name: 'Arie Visser', prefix: 'av' },
   { mmsi: '244029398', name: 'Douwe Tot',   prefix: 'dt' },
 ];
 
-// Terschelling haven als startpositie
-const MAP_CENTER = [53.363, 5.218];
+const MAP_CENTER = [53.363, 5.218];   // Terschelling haven
 const MAP_ZOOM   = 12;
 
 let knrmMap     = null;
 let knrmMarkers = {};
+let aisWs       = null;
 
+// ── Kaart initialiseren ───────────────────────────────────────────────────────
 function initKnrmMap() {
   knrmMap = L.map('knrmMap', {
     center: MAP_CENTER,
@@ -1052,126 +1060,143 @@ function initKnrmMap() {
     attributionControl: false,
   });
 
-  // OpenStreetMap als basemap (gefilterd naar donker via CSS)
+  // Basemap: OpenStreetMap (via CSS donker gefilterd)
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     maxZoom: 18,
   }).addTo(knrmMap);
 
-  // OpenSeaMap nautische laag bovenop (bevat AIS-symbolen en kaartmerken)
+  // Nautische laag: OpenSeaMap (dieptes, betonning, havens)
   L.tileLayer('https://tiles.openseamap.org/seamark/{z}/{x}/{y}.png', {
     maxZoom: 18,
-    opacity: 0.85,
+    opacity: 0.9,
   }).addTo(knrmMap);
 
-  // Initieel placeholder markers
+  // Markers starten onzichtbaar — verschijnen zodra er data is
   VESSELS.forEach(v => {
-    const icon = buildVesselIcon(v.name, 0);
-    const marker = L.marker(MAP_CENTER, { icon, title: v.name })
-      .addTo(knrmMap);
+    const marker = L.marker(MAP_CENTER, {
+      icon: buildVesselIcon(v.name, 0),
+      title: v.name,
+      opacity: 0,           // verborgen tot eerste positie binnenkomt
+    }).addTo(knrmMap);
     knrmMarkers[v.mmsi] = marker;
   });
 }
 
+// ── Schip-icoon met richtingspijl ─────────────────────────────────────────────
 function buildVesselIcon(name, heading) {
-  const short = name.split(' ')[0]; // "Arie" of "Douwe"
+  const short = name.split(' ')[0];
   return L.divIcon({
     className: '',
-    iconAnchor: [18, 9],
+    iconAnchor: [20, 20],
     html: `<div class="vessel-marker-wrap">
-      <div class="vessel-arrow" style="transform:rotate(${heading}deg);transform-origin:center bottom;"></div>
+      <div class="vessel-arrow" style="transform:rotate(${heading}deg)"></div>
       <div class="vessel-label">${short}</div>
     </div>`,
-    iconSize: [60, 40],
+    iconSize: [60, 44],
   });
 }
 
+// ── Kaartkaart updaten ────────────────────────────────────────────────────────
 function fmtPos(lat, lon) {
-  const latD = Math.abs(lat).toFixed(4) + (lat >= 0 ? '°N' : '°S');
-  const lonD = Math.abs(lon).toFixed(4) + (lon >= 0 ? '°E' : '°W');
-  return `${latD} ${lonD}`;
+  return Math.abs(lat).toFixed(4) + (lat >= 0 ? '°N' : '°S') + '  ' +
+         Math.abs(lon).toFixed(4) + (lon >= 0 ? '°E' : '°W');
 }
 
-function fmtTime(ts) {
-  if (!ts) return '—';
-  const d = new Date(ts * 1000);
-  return [d.getUTCHours(), d.getUTCMinutes(), d.getUTCSeconds()]
-    .map(n => String(n).padStart(2, '0')).join(':') + ' UTC';
+function updateCard(prefix, { lat, lon, sog, cog, timestamp }) {
+  document.getElementById(prefix + '-pos').textContent  = fmtPos(lat, lon);
+  document.getElementById(prefix + '-sog').textContent  = sog != null ? sog.toFixed(1) + ' kn' : '—';
+  document.getElementById(prefix + '-cog').textContent  = cog != null ? Math.round(cog) + '°' : '—';
+  const age = timestamp ? Math.round((Date.now() - new Date(timestamp)) / 1000) : null;
+  document.getElementById(prefix + '-time').textContent =
+    age != null ? (age < 60 ? age + 's geleden' : Math.round(age/60) + 'min geleden') : '—';
 }
 
-function updateCard(prefix, data) {
-  document.getElementById(prefix + '-pos').textContent  = fmtPos(data.lat, data.lon);
-  document.getElementById(prefix + '-sog').textContent  = (data.sog  ?? '—') + ' kn';
-  document.getElementById(prefix + '-cog').textContent  = (data.cog  ?? '—') + '°';
-  document.getElementById(prefix + '-time').textContent = fmtTime(data.time);
+// ── Marker verplaatsen ────────────────────────────────────────────────────────
+function placeVessel(mmsi, lat, lon, cog, sog, timestamp) {
+  const vessel = VESSELS.find(v => v.mmsi === String(mmsi));
+  if (!vessel) return;
+
+  const marker = knrmMarkers[String(mmsi)];
+  if (!marker) return;
+
+  marker.setLatLng([lat, lon]);
+  marker.setIcon(buildVesselIcon(vessel.name, cog || 0));
+  marker.setOpacity(1);
+
+  updateCard(vessel.prefix, { lat, lon, sog, cog, timestamp });
 }
 
-async function fetchAIS() {
+// ── AISStream WebSocket verbinding ────────────────────────────────────────────
+function connectAIS() {
   const knrmLed    = document.getElementById('knrmLed');
   const knrmStatus = document.getElementById('knrmStatus');
 
-  try {
-    // aisstream.io vereist een key — we gebruiken de gratis publieke
-    // VesselFinder JSON embed die geen key nodig heeft via hun tile proxy.
-    // Alternatief: directe fetch van marinetraffic publiek endpoint via proxy.
-    // Meest stabiele keyless optie: https://api.shipxplorer.com (geen key)
-    const mmsiList = VESSELS.map(v => v.mmsi).join(',');
-    const url = `https://api.shipxplorer.com/vessels?mmsi=${mmsiList}`;
-    const resp = await fetch(url);
-    if (!resp.ok) throw new Error('HTTP ' + resp.status);
-    const json = await resp.json();
-
-    const results = Array.isArray(json) ? json : (json.data ?? json.vessels ?? []);
-
-    let found = 0;
-    results.forEach(ship => {
-      const mmsi = String(ship.mmsi ?? ship.MMSI ?? '');
-      const vessel = VESSELS.find(v => v.mmsi === mmsi);
-      if (!vessel) return;
-
-      const lat = parseFloat(ship.lat ?? ship.latitude  ?? ship.LAT ?? 0);
-      const lon = parseFloat(ship.lon ?? ship.longitude ?? ship.LON ?? 0);
-      const sog = ship.sog ?? ship.SOG ?? ship.speed ?? '—';
-      const cog = ship.cog ?? ship.COG ?? ship.course ?? '—';
-      const time = ship.time ?? ship.timestamp ?? ship.TIME_UTC ?? null;
-
-      if (lat && lon) {
-        const latlng = [lat, lon];
-        const icon   = buildVesselIcon(vessel.name, parseFloat(cog) || 0);
-        knrmMarkers[mmsi].setLatLng(latlng).setIcon(icon);
-        updateCard(vessel.prefix, { lat, lon, sog, cog, time });
-        found++;
-      }
-    });
-
-    if (found > 0) {
-      knrmLed.style.background  = 'var(--led-rx)';
-      knrmLed.style.boxShadow   = '0 0 6px var(--led-rx)';
-      knrmStatus.textContent    = 'LIVE';
-      knrmStatus.style.color    = 'var(--accent)';
-    } else {
-      knrmStatus.textContent = 'GEEN DATA';
-    }
-
-  } catch(e) {
-    console.warn('AIS fetch mislukt:', e);
-    knrmLed.style.background = 'var(--red)';
-    knrmStatus.textContent   = 'OFFLINE';
-    knrmStatus.style.color   = 'var(--red)';
-
-    // Fallback: toon schepen op vaste Terschelling-positie
-    VESSELS.forEach((v, i) => {
-      const fallback = [53.363 + i * 0.01, 5.218 + i * 0.01];
-      knrmMarkers[v.mmsi].setLatLng(fallback);
-    });
+  if (!AISSTREAM_KEY) {
+    knrmStatus.textContent  = 'KEY ONTBREEKT';
+    knrmStatus.style.color  = 'var(--text-dim)';
+    knrmLed.style.background = 'var(--text-dim)';
+    knrmLed.style.boxShadow  = 'none';
+    console.info('KNRM tracker: vul AISSTREAM_KEY in om live posities te ontvangen.');
+    return;
   }
+
+  if (aisWs) { try { aisWs.close(); } catch(e){} }
+
+  knrmStatus.textContent   = 'VERBINDEN…';
+  knrmStatus.style.color   = 'var(--text-dim)';
+  knrmLed.style.background = 'var(--text-dim)';
+  knrmLed.style.boxShadow  = 'none';
+
+  aisWs = new WebSocket('wss://stream.aisstream.io/v0/stream');
+
+  aisWs.onopen = () => {
+    aisWs.send(JSON.stringify({
+      APIKey: AISSTREAM_KEY,
+      FiltersShipMMSI: VESSELS.map(v => v.mmsi),
+      FilterMessageTypes: ['PositionReport'],
+    }));
+    knrmStatus.textContent   = 'LIVE';
+    knrmStatus.style.color   = 'var(--accent)';
+    knrmLed.style.background = 'var(--led-rx)';
+    knrmLed.style.boxShadow  = '0 0 6px var(--led-rx)';
+  };
+
+  aisWs.onmessage = (evt) => {
+    try {
+      const msg  = JSON.parse(evt.data);
+      const pos  = msg.Message?.PositionReport;
+      const meta = msg.MetaData;
+      if (!pos || !meta) return;
+
+      placeVessel(
+        meta.MMSI,
+        meta.latitude  ?? pos.Latitude,
+        meta.longitude ?? pos.Longitude,
+        pos.Cog,
+        pos.Sog,
+        meta.time_utc,
+      );
+    } catch(e) {}
+  };
+
+  aisWs.onerror = () => {
+    knrmStatus.textContent   = 'FOUT';
+    knrmStatus.style.color   = 'var(--red)';
+    knrmLed.style.background = 'var(--red)';
+    knrmLed.style.boxShadow  = '0 0 6px var(--red)';
+  };
+
+  aisWs.onclose = () => {
+    // Herverbinden na 30s bij onverwachte sluiting
+    if (AISSTREAM_KEY) setTimeout(connectAIS, 30000);
+  };
 }
 
-// Start kaart na boot (geeft DOM tijd om te renderen)
+// Start kaart + AIS na boot
 setTimeout(() => {
   initKnrmMap();
-  fetchAIS();
-  setInterval(fetchAIS, 60000); // ververs elke minuut
-}, 1500);
+  connectAIS();
+}, 1200);
 </script>
 </body>
 </html>
