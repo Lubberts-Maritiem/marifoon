@@ -237,6 +237,122 @@
     box-shadow: 0 0 6px var(--accent);
   }
 
+  /* ── KNRM tracker ── */
+  .knrm-header-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+  }
+
+  .knrm-map-outer {
+    position: relative;
+    width: 100%;
+    height: 420px;
+    border-radius: 8px;
+    border: 1px solid #0f1318;
+    overflow: hidden;
+    background: #040608;
+    box-shadow: inset 0 2px 8px rgba(0,0,0,0.5);
+  }
+
+  #knrmMap {
+    width: 100%; height: 100%;
+  }
+
+  /* Leaflet dark override */
+  .knrm-map-outer .leaflet-tile-pane { filter: brightness(0.55) saturate(0.6) hue-rotate(180deg); }
+  .knrm-map-outer .leaflet-overlay-pane { filter: none; }
+  .knrm-map-outer .leaflet-marker-pane  { filter: none; }
+
+  /* Custom vessel markers */
+  .vessel-marker-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    pointer-events: none;
+  }
+
+  .vessel-arrow {
+    width: 0; height: 0;
+    border-left: 7px solid transparent;
+    border-right: 7px solid transparent;
+    border-bottom: 18px solid var(--red);
+    filter: drop-shadow(0 0 4px rgba(192,57,43,0.8));
+  }
+
+  .vessel-label {
+    font-family: 'Orbitron', monospace;
+    font-size: 9px;
+    letter-spacing: 1px;
+    color: var(--accent);
+    background: rgba(8,11,14,0.85);
+    padding: 2px 5px;
+    border-radius: 2px;
+    border: 1px solid rgba(232,160,32,0.3);
+    white-space: nowrap;
+    text-transform: uppercase;
+  }
+
+  .knrm-vessel-cards {
+    display: flex;
+    gap: 12px;
+    margin-top: 12px;
+  }
+
+  .knrm-card {
+    flex: 1;
+    background: #080b0e;
+    border: 1px solid #0f1318;
+    border-radius: 6px;
+    padding: 10px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .knrm-card-name {
+    font-family: 'Orbitron', monospace;
+    font-size: 11px;
+    letter-spacing: 2px;
+    color: var(--accent);
+    text-transform: uppercase;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+  }
+
+  .knrm-card-dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: var(--red);
+    box-shadow: 0 0 5px var(--red);
+    animation: blink 1.4s infinite;
+    flex-shrink: 0;
+  }
+
+  .knrm-card-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 10px;
+    letter-spacing: 1px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+  }
+
+  .knrm-card-val {
+    font-family: 'Orbitron', monospace;
+    font-size: 10px;
+    color: var(--text);
+    letter-spacing: 1px;
+  }
+
+  @media (max-width: 600px) {
+    .knrm-vessel-cards { flex-direction: column; }
+    .knrm-map-outer { height: 300px; }
+  }
+
   /* ── Camera panel ── */
   .camera-header {
     display: flex;
@@ -561,6 +677,64 @@
       <div class="cam-loading-icon">◎</div>
       <div class="cam-loading-text" id="camLoadingText">Stream verbinden…</div>
     </div>
+  </div>
+
+</div>
+
+<!-- ═══════════════════════════ KNRM TRACKER ═══════════════════════════ -->
+<div class="panel">
+
+  <div class="camera-header">
+    <div class="camera-title">KNRM — Live Positie</div>
+    <div class="camera-controls">
+      <div class="cam-live-badge">
+        <div class="led rx"></div>AIS LIVE
+      </div>
+    </div>
+  </div>
+
+  <div class="knrm-grid">
+
+    <div class="knrm-vessel">
+      <div class="knrm-vessel-header">
+        <div class="knrm-vessel-dot"></div>
+        <div class="knrm-vessel-name">Arie Visser</div>
+        <div class="knrm-vessel-mmsi">MMSI 244413000</div>
+      </div>
+      <div class="knrm-map-wrap">
+        <div class="cam-corner tl"></div>
+        <div class="cam-corner tr"></div>
+        <div class="cam-corner bl"></div>
+        <div class="cam-corner br"></div>
+        <iframe
+          src="https://www.vesselfinder.com/aismap?imo=0&mmsi=244413000&zoom=13&width=100%25&height=100%25&names=true&track=true&theme=dark"
+          allowfullscreen
+          loading="lazy"
+          title="KNRM Arie Visser">
+        </iframe>
+      </div>
+    </div>
+
+    <div class="knrm-vessel">
+      <div class="knrm-vessel-header">
+        <div class="knrm-vessel-dot"></div>
+        <div class="knrm-vessel-name">Douwe Tot</div>
+        <div class="knrm-vessel-mmsi">MMSI 244029398</div>
+      </div>
+      <div class="knrm-map-wrap">
+        <div class="cam-corner tl"></div>
+        <div class="cam-corner tr"></div>
+        <div class="cam-corner bl"></div>
+        <div class="cam-corner br"></div>
+        <iframe
+          src="https://www.vesselfinder.com/aismap?imo=0&mmsi=244029398&zoom=13&width=100%25&height=100%25&names=true&track=true&theme=dark"
+          allowfullscreen
+          loading="lazy"
+          title="KNRM Douwe Tot">
+        </iframe>
+      </div>
+    </div>
+
   </div>
 
 </div>
