@@ -145,77 +145,6 @@
   .led.pwr { background: var(--led-pwr); box-shadow: 0 0 6px var(--led-pwr); }
   .led.rx  { background: var(--led-rx);  box-shadow: 0 0 6px var(--led-rx); }
 
-  /* Scanner grid right */
-  .scanner-panel {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-    gap: 6px;
-  }
-
-  .scanner-label {
-    font-size: 9px;
-    letter-spacing: 3px;
-    color: var(--accent);
-    text-transform: uppercase;
-    animation: blink 1s infinite;
-  }
-
-  .scanner-grid {
-    display: flex;
-    flex-direction: column;
-    gap: 3px;
-  }
-
-  .scan-row {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    height: 15px;
-  }
-
-  .scan-ch-num {
-    font-family: 'Orbitron', monospace;
-    font-size: 9px;
-    color: var(--text-dim);
-    width: 20px;
-    text-align: right;
-    flex-shrink: 0;
-    transition: color 0.1s;
-  }
-
-  .scan-bar-track {
-    width: 140px;
-    height: 4px;
-    background: #0d1018;
-    border-radius: 2px;
-    overflow: hidden;
-    flex-shrink: 0;
-  }
-
-  .scan-bar-fill {
-    height: 100%;
-    width: 0%;
-    background: var(--accent);
-    border-radius: 2px;
-    box-shadow: 0 0 5px var(--accent);
-  }
-
-  .scan-ch-label {
-    font-size: 8px;
-    letter-spacing: 1px;
-    color: var(--text-dim);
-    white-space: nowrap;
-    text-transform: uppercase;
-    transition: color 0.1s;
-    width: 130px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    flex-shrink: 0;
-  }
-
-  .scan-row.current .scan-ch-num  { color: var(--accent); }
-  .scan-row.current .scan-ch-label { color: var(--accent); }
 
   /* ── Waveform ── */
   .waveform-block {
@@ -243,22 +172,21 @@
     justify-content: space-between;
   }
 
-  .scan-status {
+  .rx-status {
     display: flex;
     flex-direction: column;
     gap: 4px;
   }
 
-  .scan-indicator {
+  .rx-indicator {
     font-family: 'Orbitron', monospace;
     font-size: 10px;
     letter-spacing: 3px;
     color: var(--accent);
-    animation: blink 0.9s infinite;
     text-transform: uppercase;
   }
 
-  .scan-subtitle {
+  .rx-subtitle {
     font-size: 10px;
     letter-spacing: 2px;
     color: var(--text-dim);
@@ -549,8 +477,8 @@
 
     <div class="ch-left">
       <div class="channel-label-small">Kanaal</div>
-      <div class="channel-number" id="chDisplay">16</div>
-      <div class="channel-name" id="chName">NOODKANAAL</div>
+      <div class="channel-number" id="chDisplay">02</div>
+      <div class="channel-name" id="chName">VC Brandaris</div>
       <div class="led-row">
         <div class="led-item"><div class="led pwr"></div>PWR</div>
         <div class="led-item"><div class="led rx" id="ledRx"></div>RX</div>
@@ -558,10 +486,6 @@
       </div>
     </div>
 
-    <div class="scanner-panel">
-      <div class="scanner-label">▶ Scanner actief</div>
-      <div class="scanner-grid" id="scannerGrid"></div>
-    </div>
 
   </div>
 
@@ -575,9 +499,9 @@
   <!-- Bottom controls -->
   <div class="controls-row">
 
-    <div class="scan-status">
-      <div class="scan-indicator">SCANNING</div>
-      <div class="scan-subtitle">Terschelling VHF</div>
+    <div class="rx-status">
+      <div class="rx-indicator" id="rxIndicator">● RX LIVE</div>
+      <div class="rx-subtitle">Terschelling VHF</div>
     </div>
 
     <div class="smeter-block">
@@ -662,23 +586,7 @@ const CAMERAS = {
   }
 };
 
-// ── Scankanalen Terschelling ──────────────────────────────────────────────────
-const SCAN_CHANNELS = [
-  { ch: '00', label: 'Onderling KNRM' },
-  { ch: '02', label: 'VC Brandaris' },
-  { ch: '04', label: 'Meldpost Waddenzee' },
-  { ch: '08', label: 'Marifoon verkeer' },
-  { ch: '10', label: 'Aanroep binnenwater' },
-  { ch: '12', label: 'Havendienst' },
-  { ch: '16', label: 'Noodkanaal' },
-  { ch: '19', label: 'Loods kanaal' },
-  { ch: '63', label: 'VTS off Texel' },
-  { ch: '67', label: 'Search & Rescue' },
-  { ch: '97', label: 'Kustwacht vliegtuig' },
-];
-
 // ── State ─────────────────────────────────────────────────────────────────────
-let scanIdx        = SCAN_CHANNELS.findIndex(c => c.ch === '16');
 let volume         = 80;
 let knobAngle      = 135;
 let audioCtx       = null;
@@ -688,11 +596,8 @@ let knobDragging   = false;
 let knobStartY     = 0;
 let knobStartAngle = 0;
 let currentHls     = null;
-let scanFillTimer  = null;
 
 // ── DOM refs ──────────────────────────────────────────────────────────────────
-const chDisplay   = document.getElementById('chDisplay');
-const chName      = document.getElementById('chName');
 const audioPlayer = document.getElementById('audioPlayer');
 const volSlider   = document.getElementById('volSlider');
 const knobEl      = document.getElementById('knob');
@@ -721,8 +626,6 @@ const camTs       = document.getElementById('camTimestamp');
         bootCh.textContent = '16';
         setTimeout(() => {
           overlay.classList.add('hidden');
-          buildScannerGrid();
-          startScanner();
           buildSmeter();
           animateSmeter();
           startAudio();
@@ -733,86 +636,31 @@ const camTs       = document.getElementById('camTimestamp');
   }, 80);
 })();
 
-// ── Scanner grid opbouwen ─────────────────────────────────────────────────────
-function buildScannerGrid() {
-  const grid = document.getElementById('scannerGrid');
-  SCAN_CHANNELS.forEach((c, i) => {
-    const row = document.createElement('div');
-    row.className = 'scan-row';
-    row.id = 'scanrow_' + i;
-    row.innerHTML =
-      `<div class="scan-ch-num">${c.ch}</div>` +
-      `<div class="scan-bar-track"><div class="scan-bar-fill" id="scanfill_${i}"></div></div>` +
-      `<div class="scan-ch-label">${c.label}</div>`;
-    grid.appendChild(row);
-  });
-}
-
-// ── Scanner animatie ──────────────────────────────────────────────────────────
-function advanceScan() {
-  // Reset vorige rij
-  const prevFill = document.getElementById('scanfill_' + scanIdx);
-  if (prevFill) prevFill.style.width = '0%';
-  const prevRow = document.getElementById('scanrow_' + scanIdx);
-  if (prevRow) prevRow.classList.remove('current');
-
-  // Volgende kanaal (cyclisch)
-  scanIdx = (scanIdx + 1) % SCAN_CHANNELS.length;
-  const ch = SCAN_CHANNELS[scanIdx];
-
-  // Update hoofddisplay
-  chDisplay.textContent = ch.ch;
-  chName.textContent    = ch.label.toUpperCase();
-
-  // Markeer huidige rij
-  const row  = document.getElementById('scanrow_' + scanIdx);
-  const fill = document.getElementById('scanfill_' + scanIdx);
-  if (row) row.classList.add('current');
-
-  // Animeer fill-balk
-  let progress = 0;
-  const TOTAL_MS = 1500;
-  const STEP_MS  = 28;
-  const steps    = TOTAL_MS / STEP_MS;
-
-  clearInterval(scanFillTimer);
-  scanFillTimer = setInterval(() => {
-    progress += 100 / steps;
-    if (fill) fill.style.width = Math.min(progress, 100) + '%';
-
-    if (progress >= 100) {
-      clearInterval(scanFillTimer);
-      // Korte RX flash
-      ledRx.style.background = 'var(--led-rx)';
-      ledRx.style.boxShadow  = '0 0 6px var(--led-rx)';
-      setTimeout(() => {
-        ledRx.style.background = '';
-        ledRx.style.boxShadow  = '';
-      }, 180);
-      setTimeout(advanceScan, 250);
-    }
-  }, STEP_MS);
-}
-
-function startScanner() {
-  // Zet startkanaal op CH16
-  chDisplay.textContent = '16';
-  chName.textContent    = 'NOODKANAAL';
-  setTimeout(advanceScan, 800);
-}
-
 // ── Audio ─────────────────────────────────────────────────────────────────────
 function startAudio() {
   audioPlayer.src    = STREAM_URL;
   audioPlayer.volume = 0.8;
-  audioPlayer.load();
 
   audioPlayer.addEventListener('error', (e) => {
     console.error('Audio stream fout:', e);
+    const ind = document.getElementById('rxIndicator');
+    if (ind) { ind.textContent = '○ GEEN SIGNAAL'; ind.style.color = 'var(--text-dim)'; }
+  });
+
+  audioPlayer.addEventListener('playing', () => {
+    ledRx.classList.add('rx');
+    const ind = document.getElementById('rxIndicator');
+    if (ind) { ind.textContent = '● RX LIVE'; ind.style.color = 'var(--accent)'; }
+  });
+
+  audioPlayer.addEventListener('pause', () => {
+    ledRx.classList.remove('rx');
   });
 
   audioPlayer.play().catch(err => {
-    console.log('Autoplay geblokkeerd:', err);
+    console.log('Autoplay geblokkeerd — wacht op klik:', err);
+    const ind = document.getElementById('rxIndicator');
+    if (ind) { ind.textContent = '▶ KLIK OM TE STARTEN'; ind.style.color = 'var(--text-dim)'; }
     document.addEventListener('click', () => {
       audioPlayer.play();
     }, { once: true });
@@ -828,13 +676,6 @@ function startAudio() {
   } catch(e) {}
 
   drawWaveform();
-
-  audioPlayer.addEventListener('playing', () => {
-    ledRx.classList.add('rx');
-  });
-  audioPlayer.addEventListener('pause', () => {
-    ledRx.classList.remove('rx');
-  });
 }
 
 // ── Waveform ──────────────────────────────────────────────────────────────────
