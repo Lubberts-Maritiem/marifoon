@@ -1577,114 +1577,118 @@ function startScan() {
   }, 800);
 }
 
-// ── Getijden West-Terschelling (RWS Waterwebservices) ────────────────────────
-const RWS_ENDPOINT = 'https://waterwebservices.rijkswaterstaat.nl/ONLINEWAARNEMINGENSERVICES_DBO/OphalenWaarnemingen';
+// ── Getijden West-Terschelling (Open-Meteo Marine API) ───────────────────────
+// Gratis, geen API key, geeft per uur sea_level_height_msl (m tov MSL, ~NAP)
+// We berekenen hoog/laag extremen door lokale minima/maxima te zoeken in de curve.
+const MARINE_URL =
+  'https://marine-api.open-meteo.com/v1/marine' +
+  '?latitude=53.37&longitude=5.22' +
+  '&current=sea_level_height_msl,wave_height' +
+  '&hourly=sea_level_height_msl' +
+  '&forecast_days=3' +
+  '&timezone=Europe%2FAmsterdam';
 
 async function fetchGetijden() {
-  // Vraag hoog/laagwaterdata voor vandaag en morgen op
-  const now    = new Date();
-  const start  = new Date(now); start.setHours(0,0,0,0);
-  const end    = new Date(now); end.setDate(end.getDate() + 2); end.setHours(23,59,59,0);
-
-  const fmt = d => d.toISOString().replace('Z', '+00:00');
-
-  const body = {
-    Locatie: { Code: 'TERHSLL', X: 5.21806, Y: 53.36917 },
-    AquoPlusWaarnemingMetadata: {
-      AquoMetadata: { Compartiment: { Code: 'OW' }, Grootheid: { Code: 'WATHTE' } }
-    },
-    Periode: { Begindatumtijd: fmt(start), Einddatumtijd: fmt(end) },
-    // Groeperingswaarde voor hoog/laag extremen
-    Groeperingsperiode: 'GETETBRKD2'
-  };
-
   try {
-    const r    = await fetch(RWS_ENDPOINT, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body)
-    });
+    const r    = await fetch(MARINE_URL);
     const json = await r.json();
 
-    if (!json.WaarnemingenLijst || !json.WaarnemingenLijst.length) {
-      throw new Error('Geen data');
+    const times  = json.hourly.time;                      // ISO strings
+    const levels = json.hourly.sea_level_height_msl;      // m tov MSL
+    const curLvl = json.current.sea_level_height_msl;     // huidig
+    const curTime= json.current.time;
+
+    // Huidig peil in cm (MSL ≈ NAP voor NL kustwateren)
+    const curCm = Math.round(curLvl * 100);
+    document.getElementById('tijWaterstand').textContent = curCm >= 0 ? '+' + curCm : String(curCm);
+    document.getElementById('tijMeettijd').textContent   =
+      new Date(curTime).toLocaleTimeString('nl-NL', { hour:'2-digit', minute:'2-digit' });
+
+    // Zoek lokale extremen (hoog/laag) in de uurrij
+    const extremes = [];
+    for (let i = 1; i < levels.length - 1; i++) {
+      const prev = levels[i-1], cur = levels[i], next = levels[i+1];
+      if (cur > prev && cur > next) {                     // lokaal maximum = hoogwater
+        extremes.push({ t: new Date(times[i]), val: Math.round(cur * 100), type: 'hoog' });
+      } else if (cur < prev && cur < next) {              // lokaal minimum = laagwater
+        extremes.push({ t: new Date(times[i]), val: Math.round(cur * 100), type: 'laag' });
+      }
     }
 
-    const entries = json.WaarnemingenLijst[0].MetingenLijst || [];
-    renderGetijden(entries);
+    // Alleen vandaag en morgen
+    const now   = new Date();
+    const limit = new Date(now); limit.setDate(limit.getDate() + 2);
+    const rows  = extremes.filter(e => e.t >= now - 6*3600*1000 && e.t <= limit);
+
+    renderGetijden(rows);
     document.getElementById('tijLed').classList.add('rx');
     document.getElementById('tijUpdated').textContent =
-      'Bron: RWS Waterwebservices · Bijgewerkt: ' + new Date().toLocaleTimeString('nl-NL', { hour:'2-digit', minute:'2-digit' });
+      'Bron: Open-Meteo Marine · Bijgewerkt: ' +
+      new Date().toLocaleTimeString('nl-NL', { hour:'2-digit', minute:'2-digit' });
 
   } catch(e) {
-    // Fallback: toon statische data van waterkaart.net die we al kennen
-    renderGetijdenFallback();
-    document.getElementById('tijUpdated').textContent = 'Live data tijdelijk niet beschikbaar · Astronomische verwachting';
+    document.getElementById('tijUpdated').textContent = 'Getijdata tijdelijk niet beschikbaar';
   }
 }
 
-function renderGetijden(entries) {
-  const tbody    = document.getElementById('tijBody');
-  const nowMs    = Date.now();
-  let   nextIdx  = -1;
+function renderGetijden(rows) {
+  const tbody  = document.getElementById('tijBody');
+  const nowMs  = Date.now();
+  const nextIdx = rows.findIndex(r => r.t.getTime() > nowMs);
 
-  // Zoek het eerstvolgende hoog/laag water
-  const rows = entries.map((m, i) => {
-    const t    = new Date(m.Tijdstip);
-    const val  = Math.round(m.Meetwaarde.Waarde_Numeriek * 100); // m → cm
-    const type = m.WaarnemingMetadata?.Grootheid?.Code === 'WATHTE'
-      ? (val > 0 ? 'hoog' : 'laag') : 'laag';
-    return { t, val, type, future: t.getTime() > nowMs };
-  });
-
-  // Eerste toekomstige rij markeren
-  nextIdx = rows.findIndex(r => r.future);
-
-  // Huidige waterstand: dichtstbijzijnde meting
-  const nowD = new Date();
-  const closest = rows.reduce((a, b) =>
-    Math.abs(a.t - nowD) < Math.abs(b.t - nowD) ? a : b, rows[0]);
-  if (closest) {
-    document.getElementById('tijWaterstand').textContent = closest.val > 0 ? '+' + closest.val : closest.val;
-    document.getElementById('tijMeettijd').textContent =
-      closest.t.toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' });
-  }
-
-  // Volgend hoog/laag
+  // Volgend hoog/laag tegel
   if (nextIdx >= 0) {
     const nxt = rows[nextIdx];
-    document.getElementById('tijNextLabel').textContent = nxt.type === 'hoog' ? 'Volgend hoogwater' : 'Volgend laagwater';
-    document.getElementById('tijNextValue').textContent = nxt.t.toLocaleTimeString('nl-NL', { hour:'2-digit', minute:'2-digit' });
-    document.getElementById('tijNextUnit').textContent  = nxt.t.toLocaleDateString('nl-NL', { weekday:'short' });
+    document.getElementById('tijNextLabel').textContent =
+      nxt.type === 'hoog' ? 'Volgend hoogwater' : 'Volgend laagwater';
+    document.getElementById('tijNextValue').textContent =
+      nxt.t.toLocaleTimeString('nl-NL', { hour:'2-digit', minute:'2-digit' });
+    document.getElementById('tijNextUnit').textContent =
+      nxt.t.toLocaleDateString('nl-NL', { weekday:'short' });
     document.getElementById('tijNextTile').classList.toggle('alert', nxt.type === 'laag');
   }
 
-  // Tabel
   tbody.innerHTML = rows.map((r, i) => {
-    const dag   = r.t.toLocaleDateString('nl-NL', { weekday: 'short', day: 'numeric', month: 'short' });
-    const tijd  = r.t.toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' });
+    const dag   = r.t.toLocaleDateString('nl-NL', { weekday:'short', day:'numeric', month:'short' });
+    const tijd  = r.t.toLocaleTimeString('nl-NL', { hour:'2-digit', minute:'2-digit' });
     const badge = `<span class="tij-badge ${r.type}">${r.type === 'hoog' ? '▲ Hoog' : '▽ Laag'}</span>`;
-    const nap   = r.val > 0 ? '+' + r.val : String(r.val);
+    const nap   = r.val >= 0 ? '+' + r.val : String(r.val);
     const cls   = [r.type, i === nextIdx ? 'next' : ''].filter(Boolean).join(' ');
     return `<tr class="${cls}"><td>${dag}</td><td>${tijd}</td><td>${badge}</td><td>${nap} cm</td></tr>`;
-  }).join('');
+  }).join('') || '<tr><td colspan="4" style="text-align:center;color:var(--text-dim);padding:16px;">Geen data</td></tr>';
 }
 
-function renderGetijdenFallback() {
-  // Statische data gebaseerd op astronomische verwachting van waterkaart.net (13–14 mei 2026)
-  const fallback = [
-    { label: 'di 13 mei', tijd: '06:53', type: 'hoog', nap: '+44' },
-    { label: 'di 13 mei', tijd: '12:53', type: 'laag', nap: '-91' },
-    { label: 'di 13 mei', tijd: '19:18', type: 'hoog', nap: '+82' },
-    { label: 'wo 14 mei', tijd: '01:41', type: 'laag', nap: '-108' },
-    { label: 'wo 14 mei', tijd: '07:54', type: 'hoog', nap: '+55' },
-    { label: 'wo 14 mei', tijd: '13:59', type: 'laag', nap: '-103' },
-    { label: 'wo 14 mei', tijd: '20:15', type: 'hoog', nap: '+88' },
-  ];
-  document.getElementById('tijBody').innerHTML = fallback.map(r => {
-    const badge = `<span class="tij-badge ${r.type}">${r.type === 'hoog' ? '▲ Hoog' : '▽ Laag'}</span>`;
-    return `<tr class="${r.type}"><td>${r.label}</td><td>${r.tijd}</td><td>${badge}</td><td>${r.nap} cm</td></tr>`;
-  }).join('');
+// ── Windroos micro-animatie ───────────────────────────────────────────────────
+// De naald trilt subtiel rond de werkelijke windrichting — alsof de sensor live meet.
+let windRoseTarget   = 0;   // werkelijke richting uit API (graden)
+let windRoseCurrent  = 0;   // huidige gerenderde hoek (inclusief drift)
+let windRoseAnimId   = null;
+
+function startWindRoseAnimation() {
+  if (windRoseAnimId) return;   // al actief
+
+  let driftPhase  = 0;
+  let noiseOffset = Math.random() * 100;
+
+  function tick() {
+    driftPhase  += 0.018;                    // basis sinus-snelheid
+    noiseOffset += 0.007;
+
+    // Combinatie van twee sinussen + kleine ruis = organisch gevoel
+    const drift =
+      Math.sin(driftPhase)          * 1.8 +   // langzame zwaai ±1.8°
+      Math.sin(driftPhase * 2.3)    * 0.7 +   // snellere trilling ±0.7°
+      (Math.random() - 0.5)         * 0.4;    // miniem stochastisch hapje ±0.2°
+
+    windRoseCurrent = windRoseTarget + drift;
+
+    const arrow = document.getElementById('windArrow');
+    if (arrow) arrow.setAttribute('transform', `rotate(${windRoseCurrent} 22 22)`);
+
+    windRoseAnimId = requestAnimationFrame(tick);
+  }
+
+  windRoseAnimId = requestAnimationFrame(tick);
 }
 
 // ── Weerstation (Open-Meteo · KNMI HARMONIE AROME) ───────────────────────────
@@ -1744,8 +1748,9 @@ async function fetchWeather() {
     document.getElementById('wvDirText').textContent = dirText;
     document.getElementById('wvVis').textContent    = visKm;
 
-    // Windrose pijl
-    document.getElementById('windArrow').setAttribute('transform', `rotate(${dirDeg} 22 22)`);
+    // Windrose: stel doelrichting in en start de micro-animatie
+    windRoseTarget = dirDeg;
+    startWindRoseAnimation();
 
     // Beaufort-balk
     buildBftBar(bft);
