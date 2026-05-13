@@ -193,6 +193,128 @@
     text-transform: uppercase;
   }
 
+  /* ── Scan display (rechts in display-block) ── */
+  .scan-display {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0;
+  }
+
+  .scan-display-label {
+    font-size: 10px;
+    letter-spacing: 4px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    margin-bottom: 8px;
+    text-align: right;
+  }
+
+  /* Het venster dat de kanaallijst toont — 5 kanalen zichtbaar */
+  .scan-window {
+    position: relative;
+    width: 220px;
+    height: 130px;
+    overflow: hidden;
+    background: #050709;
+    border: 1px solid #0f1318;
+    border-radius: 6px;
+    box-shadow: inset 0 2px 8px rgba(0,0,0,0.6);
+  }
+
+  /* Vervaag boven- en onderkant */
+  .scan-window::before,
+  .scan-window::after {
+    content: '';
+    position: absolute;
+    left: 0; right: 0;
+    height: 32px;
+    z-index: 2;
+    pointer-events: none;
+  }
+  .scan-window::before {
+    top: 0;
+    background: linear-gradient(to bottom, #050709 0%, transparent 100%);
+  }
+  .scan-window::after {
+    bottom: 0;
+    background: linear-gradient(to top, #050709 0%, transparent 100%);
+  }
+
+  /* Actieve kanaal highlight-balk in het midden */
+  .scan-cursor {
+    position: absolute;
+    top: 50%; left: 0; right: 0;
+    transform: translateY(-50%);
+    height: 26px;
+    background: rgba(232,160,32,0.08);
+    border-top: 1px solid rgba(232,160,32,0.25);
+    border-bottom: 1px solid rgba(232,160,32,0.25);
+    z-index: 1;
+    pointer-events: none;
+  }
+
+  /* Scrollende kanalenlijst */
+  .scan-list {
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    transition: transform 0.45s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .scan-item {
+    height: 26px;
+    display: flex;
+    align-items: center;
+    padding: 0 12px;
+    gap: 10px;
+    font-family: 'Orbitron', monospace;
+  }
+
+  .scan-item-ch {
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    color: var(--text-dim);
+    min-width: 24px;
+    transition: color 0.3s, text-shadow 0.3s;
+  }
+
+  .scan-item-name {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 10px;
+    letter-spacing: 1.5px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    transition: color 0.3s;
+  }
+
+  .scan-item.active .scan-item-ch {
+    color: var(--accent);
+    text-shadow: 0 0 10px var(--accent);
+  }
+
+  .scan-item.active .scan-item-name {
+    color: rgba(232,160,32,0.75);
+  }
+
+  /* Scan status badge onder het venster */
+  .scan-status-badge {
+    margin-top: 6px;
+    font-family: 'Orbitron', monospace;
+    font-size: 9px;
+    letter-spacing: 3px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    text-align: right;
+  }
+  .scan-status-badge.active {
+    color: var(--accent);
+    animation: blink 0.8s infinite;
+  }
+
   /* S-meter */
   .smeter-block { display: flex; flex-direction: column; align-items: center; gap: 8px; }
   .smeter-label { font-size: 10px; letter-spacing: 3px; color: var(--text-dim); text-transform: uppercase; }
@@ -552,6 +674,15 @@
       </div>
     </div>
 
+    <!-- Scan display rechts -->
+    <div class="scan-display">
+      <div class="scan-display-label">Scan</div>
+      <div class="scan-window">
+        <div class="scan-cursor"></div>
+        <div class="scan-list" id="scanList"></div>
+      </div>
+      <div class="scan-status-badge" id="scanBadge">● Standby</div>
+    </div>
 
   </div>
 
@@ -698,6 +829,21 @@
 // ── Configuratie ─────────────────────────────────────────────────────────────
 const STREAM_URL = 'https://www.tbandsma.nl:8443/;';
 
+// Terschelling-specifieke scankanalen
+const SCAN_CHANNELS = [
+  { ch:  0, name: 'Onderling K.N.R.M.' },
+  { ch:  2, name: 'VC Brandaris'        },
+  { ch:  4, name: 'Meldpost Waddenzee'  },
+  { ch:  8, name: 'Algemeen marifoon'   },
+  { ch: 10, name: 'Aanroep binnenwater' },
+  { ch: 12, name: 'Havendienst Terschelling' },
+  { ch: 16, name: 'Noodkanaal'          },
+  { ch: 19, name: 'Loods kanaal'        },
+  { ch: 63, name: 'VTS Off Texel'       },
+  { ch: 67, name: 'Search and rescue'   },
+  { ch: 97, name: 'Kustwacht Vliegtuig' },
+];
+
 const CAMERAS = {
   cam1: {
     url:      'https://584b389d712f9.streamlock.net/live-cam/havenkom-ts/playlist.m3u8?wowzatokenendtime=1778523889&wowzatokenhash=q0vYSOilqvaYyLz1cLGlqF4kwgzOO2FPcQbyXhyMnm4=&wowzatokenstarttime=1778522029',
@@ -721,6 +867,9 @@ let knobDragging   = false;
 let knobStartY     = 0;
 let knobStartAngle = 0;
 let currentHls     = null;
+let scanIndex      = 0;
+let scanTimer      = null;
+let scanRunning    = false;
 
 // ── DOM refs ──────────────────────────────────────────────────────────────────
 const audioPlayer = document.getElementById('audioPlayer');
@@ -753,6 +902,8 @@ const camTs       = document.getElementById('camTimestamp');
           overlay.classList.add('hidden');
           buildSmeter();
           animateSmeter();
+          buildScanDisplay();
+          startScan();
           startAudio();
           switchCamera();
         }, 600);
@@ -841,7 +992,6 @@ function startAudio() {
     ledRx.classList.add('rx');
     const ind = document.getElementById('rxIndicator');
     if (ind) { ind.textContent = '● RX LIVE'; ind.style.color = 'var(--accent)'; }
-    // Start fetch-analyser parallel zodra audio speelt
     if (!fetchActive) startFetchAnalyser();
   });
 
@@ -849,15 +999,32 @@ function startAudio() {
     ledRx.classList.remove('rx');
   });
 
-  // Probeer meteen te spelen
-  audioPlayer.play().catch(err => {
-    console.log('Autoplay geblokkeerd — wacht op klik');
+  const tryPlay = () => {
+    audioPlayer.play().catch(() => {});
+  };
+
+  // Directe poging — slaagt als browser autoplay toestaat
+  tryPlay();
+
+  // Fallback: eerste interactie start de audio alsnog
+  const onInteract = () => {
+    tryPlay();
     const ind = document.getElementById('rxIndicator');
-    if (ind) { ind.textContent = '▶ KLIK OM TE STARTEN'; ind.style.color = 'var(--text-dim)'; }
-    document.addEventListener('click', () => {
-      audioPlayer.play();
-    }, { once: true });
-  });
+    if (ind && ind.textContent.includes('KLIK')) {
+      ind.textContent = '● RX LIVE';
+      ind.style.color = 'var(--accent)';
+    }
+  };
+  document.addEventListener('click',      onInteract, { once: true });
+  document.addEventListener('touchstart', onInteract, { once: true });
+
+  // Toon hint als autoplay geblokkeerd wordt
+  setTimeout(() => {
+    if (audioPlayer.paused) {
+      const ind = document.getElementById('rxIndicator');
+      if (ind) { ind.textContent = '▶ KLIK OM TE STARTEN'; ind.style.color = 'var(--text-dim)'; }
+    }
+  }, 800);
 
   drawWaveform();
 }
@@ -1083,6 +1250,71 @@ setInterval(() => {
 
 document.getElementById('utcClock').textContent = utcString();
 camTs.textContent = utcString();
+
+// ── Scan display ──────────────────────────────────────────────────────────────
+// Bouwt een scrollende lijst van kanalen in het scan-venster.
+// De actieve kanaal staat altijd midden in het venster.
+// ITEM_H moet overeenkomen met de CSS height van .scan-item (26px).
+const ITEM_H = 26;
+
+function buildScanDisplay() {
+  const list = document.getElementById('scanList');
+  list.innerHTML = '';
+
+  // Verdubbel de lijst voor naadloze wrap: [...kanalen, ...kanalen, ...kanalen]
+  // Zo kunnen we altijd naar de middelste kopie scrollen
+  const triple = [...SCAN_CHANNELS, ...SCAN_CHANNELS, ...SCAN_CHANNELS];
+
+  triple.forEach((item, i) => {
+    const el = document.createElement('div');
+    el.className = 'scan-item';
+    el.dataset.index = i % SCAN_CHANNELS.length;
+    el.innerHTML = `
+      <span class="scan-item-ch">${String(item.ch).padStart(2,'0')}</span>
+      <span class="scan-item-name">${item.name}</span>
+    `;
+    list.appendChild(el);
+  });
+
+  positionScan(scanIndex, false);
+}
+
+function positionScan(idx, animate) {
+  const list      = document.getElementById('scanList');
+  const totalCh   = SCAN_CHANNELS.length;
+  // Gebruik de middelste kopie (offset = totalCh items)
+  const targetRow = idx + totalCh;
+  // Centreer het actieve item in het 130px venster (5 × 26px)
+  const windowMid = 130 / 2 - ITEM_H / 2;
+  const offset    = -(targetRow * ITEM_H) + windowMid;
+
+  list.style.transition = animate
+    ? 'transform 0.45s cubic-bezier(0.4, 0, 0.2, 1)'
+    : 'none';
+  list.style.transform = `translateY(${offset}px)`;
+
+  // Markeer actieve item
+  list.querySelectorAll('.scan-item').forEach(el => {
+    el.classList.toggle('active', parseInt(el.dataset.index) === idx);
+  });
+
+  // Kanaal-nummer en naam updaten in het grote display
+  const ch = SCAN_CHANNELS[idx];
+  document.getElementById('chDisplay').textContent = String(ch.ch).padStart(2, '0');
+  document.getElementById('chName').textContent    = ch.name;
+}
+
+function startScan() {
+  scanRunning = true;
+  const badge = document.getElementById('scanBadge');
+  badge.textContent = '▶ Scanning';
+  badge.classList.add('active');
+
+  scanTimer = setInterval(() => {
+    scanIndex = (scanIndex + 1) % SCAN_CHANNELS.length;
+    positionScan(scanIndex, true);
+  }, 800);
+}
 
 // (KNRM tracker via VesselFinder embed — geen JS nodig)
 </script>
