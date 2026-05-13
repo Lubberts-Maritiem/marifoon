@@ -1519,48 +1519,46 @@ document.getElementById('utcClock').textContent = utcString();
 const ITEM_H = 26;
 
 function buildScanDisplay() {
-  const list = document.getElementById('scanList');
+  const list  = document.getElementById('scanList');
+  const total = SCAN_CHANNELS.length;
   list.innerHTML = '';
 
-  // Verdubbel de lijst voor naadloze wrap: [...kanalen, ...kanalen, ...kanalen]
-  // Zo kunnen we altijd naar de middelste kopie scrollen
-  const triple = [...SCAN_CHANNELS, ...SCAN_CHANNELS, ...SCAN_CHANNELS];
+  // Bouw 5× de lijst zodat we ruim kunnen scrollen zonder de rand te raken.
+  // Stille reset halverwege zorgt voor een naadloze oneindige loop.
+  const COPIES = 5;
+  for (let c = 0; c < COPIES; c++) {
+    SCAN_CHANNELS.forEach((item, i) => {
+      const el = document.createElement('div');
+      el.className = 'scan-item';
+      el.dataset.index = i;
+      el.innerHTML = `
+        <span class="scan-item-ch">${String(item.ch).padStart(2,'0')}</span>
+        <span class="scan-item-name">${item.name}</span>
+      `;
+      list.appendChild(el);
+    });
+  }
 
-  triple.forEach((item, i) => {
-    const el = document.createElement('div');
-    el.className = 'scan-item';
-    el.dataset.index = i % SCAN_CHANNELS.length;
-    el.innerHTML = `
-      <span class="scan-item-ch">${String(item.ch).padStart(2,'0')}</span>
-      <span class="scan-item-name">${item.name}</span>
-    `;
-    list.appendChild(el);
-  });
-
+  // Begin in kopie 2 (midden van de 5) zodat er zowel boven als onder ruimte is
+  scanIndex = 2 * total;
   positionScan(scanIndex, false);
 }
 
-function positionScan(idx, animate) {
-  const list      = document.getElementById('scanList');
-  const totalCh   = SCAN_CHANNELS.length;
-  // Gebruik de middelste kopie (offset = totalCh items)
-  const targetRow = idx + totalCh;
-  // Centreer het actieve item in het 130px venster (5 × 26px)
-  const windowMid = 130 / 2 - ITEM_H / 2;
-  const offset    = -(targetRow * ITEM_H) + windowMid;
+function positionScan(rawIdx, animate) {
+  const list    = document.getElementById('scanList');
+  const total   = SCAN_CHANNELS.length;
+  const modIdx  = ((rawIdx % total) + total) % total;
+  const winMid  = 130 / 2 - ITEM_H / 2;
+  const offset  = -(rawIdx * ITEM_H) + winMid;
 
-  list.style.transition = animate
-    ? 'transform 0.45s cubic-bezier(0.4, 0, 0.2, 1)'
-    : 'none';
-  list.style.transform = `translateY(${offset}px)`;
+  list.style.transition = animate ? 'transform 0.45s cubic-bezier(0.4, 0, 0.2, 1)' : 'none';
+  list.style.transform  = `translateY(${offset}px)`;
 
-  // Markeer actieve item
   list.querySelectorAll('.scan-item').forEach(el => {
-    el.classList.toggle('active', parseInt(el.dataset.index) === idx);
+    el.classList.toggle('active', parseInt(el.dataset.index) === modIdx);
   });
 
-  // Kanaal-nummer en naam updaten in het grote display
-  const ch = SCAN_CHANNELS[idx];
+  const ch = SCAN_CHANNELS[modIdx];
   document.getElementById('chDisplay').textContent = String(ch.ch).padStart(2, '0');
   document.getElementById('chName').textContent    = ch.name;
 }
@@ -1571,10 +1569,22 @@ function startScan() {
   badge.textContent = '▶ Scanning';
   badge.classList.add('active');
 
+  const total = SCAN_CHANNELS.length;
+
   scanTimer = setInterval(() => {
-    scanIndex = (scanIndex + 1) % SCAN_CHANNELS.length;
+    scanIndex++;
+
+    // Stille reset: zodra we kopie 4 bereiken, spring terug naar kopie 2
+    // (zelfde modulaire positie, geen zichtbare sprong).
+    if (scanIndex >= 4 * total) {
+      const mod = scanIndex % total;
+      scanIndex = 2 * total + mod;
+      positionScan(scanIndex, false);
+      return;
+    }
+
     positionScan(scanIndex, true);
-  }, 800);
+  }, 750);
 }
 
 // ── Getijden West-Terschelling (Open-Meteo Marine API) ───────────────────────
@@ -1593,41 +1603,53 @@ async function fetchGetijden() {
     const r    = await fetch(MARINE_URL);
     const json = await r.json();
 
-    const times  = json.hourly.time;                      // ISO strings
-    const levels = json.hourly.sea_level_height_msl;      // m tov MSL
-    const curLvl = json.current.sea_level_height_msl;     // huidig
+    const times  = json.hourly.time;
+    const levels = json.hourly.sea_level_height_msl;
+    const curLvl = json.current.sea_level_height_msl;
     const curTime= json.current.time;
 
-    // Huidig peil in cm (MSL ≈ NAP voor NL kustwateren)
+    // Huidig peil in cm
     const curCm = Math.round(curLvl * 100);
     document.getElementById('tijWaterstand').textContent = curCm >= 0 ? '+' + curCm : String(curCm);
-    document.getElementById('tijMeettijd').textContent   =
-      new Date(curTime).toLocaleTimeString('nl-NL', { hour:'2-digit', minute:'2-digit' });
 
-    // Zoek lokale extremen (hoog/laag) in de uurrij
+    // Tijd correct parsen: Open-Meteo geeft "2026-05-13T20:45" zonder Z → lokale tijd
+    const parseLocal = s => {
+      const [date, time] = s.split('T');
+      const [y,mo,d]     = date.split('-').map(Number);
+      const [h,mi]       = time.split(':').map(Number);
+      return new Date(y, mo-1, d, h, mi);
+    };
+
+    const curDt = parseLocal(curTime);
+    document.getElementById('tijMeettijd').textContent =
+      curDt.toLocaleTimeString('nl-NL', { hour:'2-digit', minute:'2-digit' });
+
+    // Zoek lokale extremen
     const extremes = [];
     for (let i = 1; i < levels.length - 1; i++) {
-      const prev = levels[i-1], cur = levels[i], next = levels[i+1];
-      if (cur > prev && cur > next) {                     // lokaal maximum = hoogwater
-        extremes.push({ t: new Date(times[i]), val: Math.round(cur * 100), type: 'hoog' });
-      } else if (cur < prev && cur < next) {              // lokaal minimum = laagwater
-        extremes.push({ t: new Date(times[i]), val: Math.round(cur * 100), type: 'laag' });
-      }
+      const p = levels[i-1], c = levels[i], n = levels[i+1];
+      if (c === null || p === null || n === null) continue;
+      if (c > p && c > n)
+        extremes.push({ t: parseLocal(times[i]), val: Math.round(c * 100), type: 'hoog' });
+      else if (c < p && c < n)
+        extremes.push({ t: parseLocal(times[i]), val: Math.round(c * 100), type: 'laag' });
     }
 
-    // Alleen vandaag en morgen
-    const now   = new Date();
-    const limit = new Date(now); limit.setDate(limit.getDate() + 2);
-    const rows  = extremes.filter(e => e.t >= now - 6*3600*1000 && e.t <= limit);
+    // Vandaag t/m overmorgen, inclusief al gepasseerde extremen van vandaag
+    const now      = new Date();
+    const dayStart = new Date(now); dayStart.setHours(0,0,0,0);
+    const limit    = new Date(dayStart); limit.setDate(limit.getDate() + 3);
+    const rows     = extremes.filter(e => e.t >= dayStart && e.t <= limit);
 
     renderGetijden(rows);
     document.getElementById('tijLed').classList.add('rx');
     document.getElementById('tijUpdated').textContent =
-      'Bron: Open-Meteo Marine · Bijgewerkt: ' +
+      'Bron: Open-Meteo Marine · ' +
       new Date().toLocaleTimeString('nl-NL', { hour:'2-digit', minute:'2-digit' });
 
   } catch(e) {
     document.getElementById('tijUpdated').textContent = 'Getijdata tijdelijk niet beschikbaar';
+    console.error('fetchGetijden:', e);
   }
 }
 
