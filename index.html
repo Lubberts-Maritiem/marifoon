@@ -1756,19 +1756,28 @@ async function fetchWeather() {
     const json = await r.json();
     const c    = json.current;
 
-    const windKn   = Math.round(c.windspeed_10m);
-    const gustKn   = Math.round(c.windgusts_10m);
-    const dirDeg   = Math.round(c.winddirection_10m);
-    const visKm    = (c.visibility / 1000).toFixed(1);
-    const bft      = bftFromKnots(windKn);
-    const dirText  = degToCompass(dirDeg);
-    const isAlert  = bft >= 6;
+    // Open-Meteo stuurt "2026-05-13T21:00" zonder timezone-suffix.
+    // new Date() parst dit inconsistent per browser — handmatig splitsen is betrouwbaarder.
+    const parseLocalW = s => {
+      const [date, time] = s.split('T');
+      const [y, mo, d]   = date.split('-').map(Number);
+      const [h, mi]      = time.split(':').map(Number);
+      return new Date(y, mo - 1, d, h, mi);
+    };
 
-    document.getElementById('wvWind').textContent   = windKn;
-    document.getElementById('wvGusts').textContent  = gustKn;
-    document.getElementById('wvDir').textContent    = dirDeg + '°';
+    const windKn  = Math.round(c.windspeed_10m);
+    const gustKn  = Math.round(c.windgusts_10m);
+    const dirDeg  = Math.round(c.winddirection_10m);
+    const visKm   = (c.visibility / 1000).toFixed(1);
+    const bft     = bftFromKnots(windKn);
+    const dirText = degToCompass(dirDeg);
+    const isAlert = bft >= 6;
+
+    document.getElementById('wvWind').textContent    = windKn;
+    document.getElementById('wvGusts').textContent   = gustKn;
+    document.getElementById('wvDir').textContent     = dirDeg + '°';
     document.getElementById('wvDirText').textContent = dirText;
-    document.getElementById('wvVis').textContent    = visKm;
+    document.getElementById('wvVis').textContent     = visKm;
 
     // Windrose: stel doelrichting in en start de micro-animatie
     windRoseTarget = dirDeg;
@@ -1780,13 +1789,14 @@ async function fetchWeather() {
     // Kleur rood bij waarschuwing
     document.getElementById('wtWind').classList.toggle('alert', isAlert);
 
-    // Tijdstempel
-    const t = new Date(c.time);
+    // Tijdstempel (parseLocal voorkomt Invalid Date)
+    const t = parseLocalW(c.time);
     document.getElementById('weatherUpdated').textContent =
       `Bijgewerkt: ${t.toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' })} — KNMI HARMONIE AROME`;
 
     document.getElementById('weatherLed').classList.add('rx');
   } catch(e) {
+    console.error('fetchWeather:', e);
     document.getElementById('weatherUpdated').textContent = 'Weerdata tijdelijk niet beschikbaar';
   }
 }
