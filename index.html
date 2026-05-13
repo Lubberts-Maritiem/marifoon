@@ -40,7 +40,7 @@
   /* ── Header ── */
   header {
     width: 100%;
-    max-width: 920px;
+    max-width: 1200px;
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -66,7 +66,7 @@
   /* ── Shared panel shell ── */
   .panel {
     width: 100%;
-    max-width: 920px;
+    max-width: 1200px;
     background: var(--panel);
     border: 1px solid var(--rim);
     border-radius: 12px;
@@ -359,71 +359,6 @@
     box-shadow: 0 0 6px var(--accent);
   }
 
-  /* ── KNRM tracker ── */
-  .knrm-header-row {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 16px;
-  }
-
-  .knrm-vessel-header {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    margin-bottom: 10px;
-  }
-
-  .knrm-vessel-dot {
-    width: 8px; height: 8px;
-    border-radius: 50%;
-    background: var(--red);
-    box-shadow: 0 0 6px var(--red);
-    animation: blink 1.4s infinite;
-    flex-shrink: 0;
-  }
-
-  .knrm-vessel-name {
-    font-family: 'Orbitron', monospace;
-    font-size: 12px;
-    letter-spacing: 2px;
-    color: var(--accent);
-    text-transform: uppercase;
-  }
-
-  .knrm-vessel-mmsi {
-    font-size: 10px;
-    letter-spacing: 2px;
-    color: var(--text-dim);
-    text-transform: uppercase;
-    margin-left: auto;
-  }
-
-  .knrm-map-wrap {
-    position: relative;
-    width: 100%;
-    aspect-ratio: 4/3;
-    border-radius: 8px;
-    border: 1px solid #0f1318;
-    overflow: hidden;
-    background: #040608;
-    box-shadow: inset 0 2px 8px rgba(0,0,0,0.5);
-  }
-
-  /* iframe vult de wrap volledig */
-  .knrm-map-wrap iframe {
-    position: absolute;
-    inset: 0;
-    width: 100%; height: 100%;
-    border: none;
-    display: block;
-    /* Donkere tint zodat de embed past in het paneel-thema */
-    filter: brightness(0.88) saturate(0.75) contrast(1.05);
-  }
-
-  @media (max-width: 640px) {
-    .knrm-grid { grid-template-columns: 1fr; }
-  }
 
   /* ── Camera panel ── */
   .camera-header {
@@ -457,26 +392,24 @@
     text-transform: uppercase;
   }
 
-  .cam-select {
-    background: var(--steel);
-    border: 1px solid #2e3848;
-    color: var(--accent);
-    font-family: 'Orbitron', monospace;
-    font-size: 11px;
-    letter-spacing: 2px;
-    border-radius: 6px;
-    padding: 8px 30px 8px 14px;
-    cursor: pointer;
-    outline: none;
-    transition: border-color 0.15s;
-    -webkit-appearance: none;
-    appearance: none;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23e8a020'/%3E%3C/svg%3E");
-    background-repeat: no-repeat;
-    background-position: right 10px center;
-    background-color: var(--steel);
+  /* Twee camera's naast elkaar */
+  .camera-dual {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
   }
-  .cam-select:hover { border-color: var(--accent); }
+
+  @media (max-width: 640px) {
+    .camera-dual { grid-template-columns: 1fr; }
+  }
+
+  .camera-slot-label {
+    font-size: 9px;
+    letter-spacing: 3px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
 
   /* Camera viewport */
   .camera-viewport {
@@ -631,8 +564,221 @@
 
   audio { display: none; }
 
+  /* ── Mobiel ── */
+  @media (max-width: 768px) {
+    body { padding: 12px; }
+
+    .panel { padding: 16px; }
+
+    /* Display-blok: scan-display onder de kanaalweergave op smal scherm */
+    .display-block { flex-direction: column; gap: 16px; align-items: flex-start; }
+    .scan-display  { align-items: flex-start; width: 100%; }
+    .scan-window   { width: 100%; }
+
+    /* Controls: smeter en volume onder elkaar */
+    .controls-row { flex-wrap: wrap; gap: 16px; }
+
+    /* Weerstation: 2 kolommen op mobiel */
+    .weather-grid { grid-template-columns: repeat(2, 1fr) !important; }
+
+    /* Getijdentabel: compacter */
+    .tij-table th, .tij-table td { padding: 7px 8px; font-size: 12px; }
+
+    /* AIS kaart: iets minder hoog */
+    .ais-map-wrap { aspect-ratio: 4/3; }
+
+    /* Ticker wat kleiner */
+    .ticker-inner { font-size: 9px; }
+  }
+
+  /* ── Weerstation paneel ── */
+  .weather-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+
+  @media (max-width: 640px) {
+    .weather-grid { grid-template-columns: repeat(2, 1fr); }
+  }
+
+  .weather-tile {
+    background: #060809;
+    border: 1px solid #0f1318;
+    border-radius: 8px;
+    padding: 14px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    box-shadow: inset 0 2px 6px rgba(0,0,0,0.4);
+  }
+
+  .weather-tile-label {
+    font-size: 9px;
+    letter-spacing: 3px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+  }
+
+  .weather-tile-value {
+    font-family: 'Orbitron', monospace;
+    font-size: 26px;
+    font-weight: 700;
+    color: var(--accent);
+    line-height: 1;
+    text-shadow: 0 0 14px rgba(232,160,32,0.3);
+  }
+
+  .weather-tile-unit {
+    font-size: 10px;
+    letter-spacing: 2px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+  }
+
+  .weather-tile.alert .weather-tile-value { color: var(--red); text-shadow: 0 0 12px rgba(192,57,43,0.4); }
+
+  /* Windroos */
+  .wind-rose {
+    position: relative;
+    width: 44px;
+    height: 44px;
+    margin-top: 2px;
+  }
+  .wind-rose svg { width: 100%; height: 100%; }
+
+  /* Beaufort bar */
+  .bft-bar {
+    display: flex;
+    gap: 2px;
+    margin-top: 4px;
+  }
+  .bft-seg {
+    flex: 1;
+    height: 4px;
+    border-radius: 2px;
+    background: #1a2030;
+    transition: background 0.4s;
+  }
+  .bft-seg.on-green  { background: var(--green); }
+  .bft-seg.on-orange { background: #f39c12; }
+  .bft-seg.on-red    { background: var(--red); }
+
+  /* Weerbericht ticker */
+  .ticker-wrap {
+    background: #060809;
+    border: 1px solid #0f1318;
+    border-radius: 6px;
+    padding: 10px 16px;
+    overflow: hidden;
+    position: relative;
+    height: 36px;
+    display: flex;
+    align-items: center;
+  }
+
+  .ticker-inner {
+    display: flex;
+    white-space: nowrap;
+    animation: ticker-scroll 60s linear infinite;
+    font-family: 'Orbitron', monospace;
+    font-size: 10px;
+    letter-spacing: 2px;
+    color: var(--accent);
+    text-transform: uppercase;
+  }
+
+  .ticker-inner.paused { animation-play-state: paused; }
+
+  @keyframes ticker-scroll {
+    0%   { transform: translateX(100%); }
+    100% { transform: translateX(-100%); }
+  }
+
+  .ticker-label {
+    font-size: 9px;
+    letter-spacing: 3px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+
+  .weather-updated {
+    font-size: 9px;
+    letter-spacing: 2px;
+    color: var(--text-dim);
+    text-align: right;
+    margin-top: 8px;
+  }
+
+  /* ── AIS paneel ── */
+  .ais-map-wrap {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 16/7;
+    border-radius: 8px;
+    border: 1px solid #0f1318;
+    overflow: hidden;
+    background: #040608;
+    box-shadow: inset 0 2px 8px rgba(0,0,0,0.5);
+  }
+
+  .ais-map-wrap iframe {
+    position: absolute;
+    inset: 0;
+    width: 100%; height: 100%;
+    border: none;
+    display: block;
+    filter: brightness(0.90) saturate(0.8) contrast(1.05);
+  }
+
+  /* ── Getijdentabel ── */
+  .tij-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 13px;
+    letter-spacing: 0.5px;
+  }
+
+  .tij-table th {
+    font-size: 9px;
+    letter-spacing: 3px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    padding: 6px 12px;
+    text-align: left;
+    border-bottom: 1px solid var(--rim);
+  }
+
+  .tij-table td {
+    padding: 9px 12px;
+    border-bottom: 1px solid #0f1318;
+    color: var(--text);
+  }
+
+  .tij-table tr:last-child td { border-bottom: none; }
+
+  .tij-table tr.hoog td { color: var(--accent); }
+  .tij-table tr.laag td { color: #5a8fa8; }
+  .tij-table tr.next td { background: rgba(232,160,32,0.06); }
+  .tij-table tr.next td:first-child { border-left: 2px solid var(--accent); }
+
+  .tij-badge {
+    display: inline-block;
+    font-family: 'Orbitron', monospace;
+    font-size: 9px;
+    letter-spacing: 1px;
+    padding: 2px 7px;
+    border-radius: 3px;
+    text-transform: uppercase;
+  }
+  .tij-badge.hoog { background: rgba(232,160,32,0.15); color: var(--accent); }
+  .tij-badge.laag { background: rgba(90,143,168,0.15); color: #5a8fa8; }
+
   footer {
-    width: 100%; max-width: 920px;
+    width: 100%; max-width: 1200px;
     text-align: center;
     padding: 12px 0 20px;
     font-size: 10px; letter-spacing: 3px;
@@ -729,44 +875,68 @@
       <div class="cam-live-badge">
         <div class="led rx"></div>LIVE
       </div>
-      <select class="cam-select" id="camSelect" onchange="switchCamera()">
-        <option value="cam1">CAM 1 — Havenkom</option>
-        <option value="cam2">CAM 2 — Veerkade</option>
-      </select>
     </div>
   </div>
 
-  <div class="camera-viewport">
-    <div class="cam-corner tl"></div>
-    <div class="cam-corner tr"></div>
-    <div class="cam-corner bl"></div>
-    <div class="cam-corner br"></div>
+  <div class="camera-dual">
 
-    <div class="cam-overlay-top">
-      <div class="cam-rec-dot"></div>
-      <div class="cam-name-badge" id="camNameBadge">CAM 1 — Havenkom</div>
+    <!-- CAM 1 -->
+    <div>
+      <div class="camera-slot-label">CAM 1 — Havenkom</div>
+      <div class="camera-viewport">
+        <div class="cam-corner tl"></div>
+        <div class="cam-corner tr"></div>
+        <div class="cam-corner bl"></div>
+        <div class="cam-corner br"></div>
+        <div class="cam-overlay-top">
+          <div class="cam-rec-dot"></div>
+          <div class="cam-name-badge">CAM 1 — Havenkom</div>
+        </div>
+        <div class="cam-overlay-bottom">
+          <div class="cam-location">Terschelling · Havenkom</div>
+          <div class="cam-timestamp" id="camTimestamp1">--:--:-- UTC</div>
+        </div>
+        <video id="camVideo1" muted playsinline autoplay></video>
+        <div class="cam-loading" id="camLoading1">
+          <div class="cam-loading-icon">◎</div>
+          <div class="cam-loading-text" id="camLoadingText1">Stream verbinden…</div>
+        </div>
+      </div>
     </div>
 
-    <div class="cam-overlay-bottom">
-      <div class="cam-location" id="camLocation">Terschelling · Havenkom</div>
-      <div class="cam-timestamp" id="camTimestamp">--:--:-- UTC</div>
+    <!-- CAM 2 -->
+    <div>
+      <div class="camera-slot-label">CAM 2 — Veerkade</div>
+      <div class="camera-viewport">
+        <div class="cam-corner tl"></div>
+        <div class="cam-corner tr"></div>
+        <div class="cam-corner bl"></div>
+        <div class="cam-corner br"></div>
+        <div class="cam-overlay-top">
+          <div class="cam-rec-dot"></div>
+          <div class="cam-name-badge">CAM 2 — Veerkade</div>
+        </div>
+        <div class="cam-overlay-bottom">
+          <div class="cam-location">Terschelling · Veerkade</div>
+          <div class="cam-timestamp" id="camTimestamp2">--:--:-- UTC</div>
+        </div>
+        <video id="camVideo2" muted playsinline autoplay></video>
+        <div class="cam-loading" id="camLoading2">
+          <div class="cam-loading-icon">◎</div>
+          <div class="cam-loading-text" id="camLoadingText2">Stream verbinden…</div>
+        </div>
+      </div>
     </div>
 
-    <video id="camVideo" muted playsinline autoplay></video>
-
-    <div class="cam-loading" id="camLoading">
-      <div class="cam-loading-icon">◎</div>
-      <div class="cam-loading-text" id="camLoadingText">Stream verbinden…</div>
-    </div>
   </div>
 
 </div>
 
-<!-- ═══════════════════════════ KNRM TRACKER ═══════════════════════════ -->
+<!-- ═══════════════════════════ AIS ALLE SCHEPEN ═══════════════════════════ -->
 <div class="panel">
 
   <div class="camera-header">
-    <div class="camera-title">KNRM — Live Positie</div>
+    <div class="camera-title">AIS — Scheepvaart Brandaris</div>
     <div class="camera-controls">
       <div class="cam-live-badge">
         <div class="led rx"></div>AIS LIVE
@@ -774,50 +944,134 @@
     </div>
   </div>
 
-  <!-- Twee iframes naast elkaar, één per schip -->
-  <div class="knrm-grid">
+  <div class="ais-map-wrap">
+    <div class="cam-corner tl"></div>
+    <div class="cam-corner tr"></div>
+    <div class="cam-corner bl"></div>
+    <div class="cam-corner br"></div>
+    <iframe
+      src="https://www.marinetraffic.com/en/ais/embed/zoom:11/centery:53.37/centerx:5.22/maptype:0/shownames:true/mmsi:0/shipid:0/fleet:/fleet_id:/vtypes:/showmenu:false/remember:false"
+      loading="lazy"
+      allowfullscreen
+      title="AIS scheepvaart rondom Terschelling">
+    </iframe>
+  </div>
 
-    <div class="knrm-vessel">
-      <div class="knrm-vessel-header">
-        <div class="knrm-vessel-dot"></div>
-        <div class="knrm-vessel-name">Arie Visser</div>
-        <div class="knrm-vessel-mmsi">MMSI 244413000</div>
+</div>
+
+<!-- ═══════════════════════════ WEERSTATION ═══════════════════════════ -->
+<div class="panel">
+
+  <div class="camera-header">
+    <div class="camera-title">Weerstation — Terschelling</div>
+    <div class="camera-controls">
+      <div class="cam-live-badge">
+        <div class="led rx" id="weatherLed"></div>KNMI LIVE
       </div>
-      <div class="knrm-map-wrap">
-        <div class="cam-corner tl"></div>
-        <div class="cam-corner tr"></div>
-        <div class="cam-corner bl"></div>
-        <div class="cam-corner br"></div>
-        <iframe
-          src="https://www.vesselfinder.com/aismap?mmsi=244413000&zoom=14&lat=53.363&lng=5.218&width=100%25&height=100%25&names=true&track=true&fleet=&clicktoact=false&theme=dark"
-          loading="lazy"
-          allowfullscreen
-          title="KNRM Arie Visser positie">
-        </iframe>
+    </div>
+  </div>
+
+  <div class="weather-grid">
+
+    <div class="weather-tile" id="wtWind">
+      <div class="weather-tile-label">Wind</div>
+      <div class="weather-tile-value" id="wvWind">—</div>
+      <div class="weather-tile-unit">knopen</div>
+      <div class="bft-bar" id="bftBar"></div>
+    </div>
+
+    <div class="weather-tile" id="wtDir">
+      <div class="weather-tile-label">Richting</div>
+      <div class="weather-tile-value" id="wvDir">—</div>
+      <div class="weather-tile-unit" id="wvDirText">—</div>
+      <div class="wind-rose">
+        <svg viewBox="0 0 44 44" id="windRoseSvg">
+          <!-- achtergrond kompas -->
+          <circle cx="22" cy="22" r="20" fill="none" stroke="#1a2430" stroke-width="1"/>
+          <text x="22" y="7"  text-anchor="middle" fill="#546e7a" font-size="6" font-family="Barlow Condensed">N</text>
+          <text x="22" y="40" text-anchor="middle" fill="#546e7a" font-size="6" font-family="Barlow Condensed">S</text>
+          <text x="5"  y="24" text-anchor="middle" fill="#546e7a" font-size="6" font-family="Barlow Condensed">W</text>
+          <text x="39" y="24" text-anchor="middle" fill="#546e7a" font-size="6" font-family="Barlow Condensed">O</text>
+          <!-- pijl, roteerbaar via transform -->
+          <g id="windArrow" transform="rotate(0 22 22)">
+            <polygon points="22,6 19,22 22,19 25,22" fill="#e8a020"/>
+            <polygon points="22,38 19,22 22,25 25,22" fill="#546e7a"/>
+          </g>
+        </svg>
       </div>
     </div>
 
-    <div class="knrm-vessel">
-      <div class="knrm-vessel-header">
-        <div class="knrm-vessel-dot"></div>
-        <div class="knrm-vessel-name">Douwe Tot</div>
-        <div class="knrm-vessel-mmsi">MMSI 244029398</div>
-      </div>
-      <div class="knrm-map-wrap">
-        <div class="cam-corner tl"></div>
-        <div class="cam-corner tr"></div>
-        <div class="cam-corner bl"></div>
-        <div class="cam-corner br"></div>
-        <iframe
-          src="https://www.vesselfinder.com/aismap?mmsi=244029398&zoom=14&lat=53.363&lng=5.218&width=100%25&height=100%25&names=true&track=true&fleet=&clicktoact=false&theme=dark"
-          loading="lazy"
-          allowfullscreen
-          title="KNRM Douwe Tot positie">
-        </iframe>
-      </div>
+    <div class="weather-tile" id="wtGusts">
+      <div class="weather-tile-label">Windstoten</div>
+      <div class="weather-tile-value" id="wvGusts">—</div>
+      <div class="weather-tile-unit">knopen</div>
+    </div>
+
+    <div class="weather-tile" id="wtVis">
+      <div class="weather-tile-label">Zicht</div>
+      <div class="weather-tile-value" id="wvVis">—</div>
+      <div class="weather-tile-unit">km</div>
     </div>
 
   </div>
+
+  <!-- Kustwacht bericht ticker -->
+  <div class="ticker-label">Kustwacht Bericht — Kustdistrict Texel</div>
+  <div class="ticker-wrap" id="tickerWrap">
+    <div class="ticker-inner" id="tickerInner">Bericht laden…</div>
+  </div>
+
+  <div class="weather-updated" id="weatherUpdated">Laden…</div>
+
+</div>
+
+<!-- ═══════════════════════════ GETIJDEN ═══════════════════════════ -->
+<div class="panel">
+
+  <div class="camera-header">
+    <div class="camera-title">Getijden — West-Terschelling</div>
+    <div class="camera-controls">
+      <div class="cam-live-badge">
+        <div class="led rx" id="tijLed"></div>RWS DATA
+      </div>
+    </div>
+  </div>
+
+  <!-- Actuele waterstand -->
+  <div class="weather-grid" style="grid-template-columns: repeat(3,1fr); margin-bottom:16px;">
+    <div class="weather-tile">
+      <div class="weather-tile-label">Waterstand NAP</div>
+      <div class="weather-tile-value" id="tijWaterstand">—</div>
+      <div class="weather-tile-unit">cm</div>
+    </div>
+    <div class="weather-tile" id="tijNextTile">
+      <div class="weather-tile-label" id="tijNextLabel">Volgend</div>
+      <div class="weather-tile-value" id="tijNextValue">—</div>
+      <div class="weather-tile-unit" id="tijNextUnit">—</div>
+    </div>
+    <div class="weather-tile">
+      <div class="weather-tile-label">Meettijd</div>
+      <div class="weather-tile-value" style="font-size:18px;" id="tijMeettijd">—</div>
+      <div class="weather-tile-unit">lokaal</div>
+    </div>
+  </div>
+
+  <!-- Getijdentabel vandaag + morgen -->
+  <table class="tij-table" id="tijTable">
+    <thead>
+      <tr>
+        <th>Dag</th>
+        <th>Tijd</th>
+        <th>Type</th>
+        <th>NAP (cm)</th>
+      </tr>
+    </thead>
+    <tbody id="tijBody">
+      <tr><td colspan="4" style="text-align:center;color:var(--text-dim);padding:20px;">Laden…</td></tr>
+    </tbody>
+  </table>
+
+  <div class="weather-updated" id="tijUpdated">Laden…</div>
 
 </div>
 
@@ -879,12 +1133,6 @@ const knobInd     = document.getElementById('knobIndicator');
 const ledRx       = document.getElementById('ledRx');
 const canvas      = document.getElementById('waveform');
 const ctx2d       = canvas.getContext('2d');
-const camVideo    = document.getElementById('camVideo');
-const camLoading  = document.getElementById('camLoading');
-const camLoadingText = document.getElementById('camLoadingText');
-const camBadge    = document.getElementById('camNameBadge');
-const camLoc      = document.getElementById('camLocation');
-const camTs       = document.getElementById('camTimestamp');
 
 // ── Boot sequence ─────────────────────────────────────────────────────────────
 (function boot() {
@@ -905,7 +1153,8 @@ const camTs       = document.getElementById('camTimestamp');
           buildScanDisplay();
           startScan();
           startAudio();
-          switchCamera();
+          startCameras();
+          startDataFeeds();
         }, 600);
       }, 300);
     }
@@ -1202,38 +1451,47 @@ document.addEventListener('mouseup', () => { knobDragging = false; });
 setVolume(80);
 
 // ── Camera ────────────────────────────────────────────────────────────────────
-function switchCamera() {
-  const key = document.getElementById('camSelect').value;
+const hlsInstances = {};
+
+function startCameraSlot(key, videoEl, loadingEl, loadingTextEl) {
   const cam = CAMERAS[key];
+  loadingTextEl.textContent = 'Stream verbinden…';
+  loadingEl.classList.remove('hidden');
 
-  camBadge.textContent    = cam.name;
-  camLoc.textContent      = cam.location;
-  camLoadingText.textContent = 'Stream verbinden…';
-  camLoading.classList.remove('hidden');
-
-  if (currentHls) { currentHls.destroy(); currentHls = null; }
+  if (hlsInstances[key]) { hlsInstances[key].destroy(); delete hlsInstances[key]; }
 
   if (typeof Hls !== 'undefined' && Hls.isSupported()) {
     const hls = new Hls({ liveSyncDurationCount: 3, liveMaxLatencyDurationCount: 6 });
     hls.loadSource(cam.url);
-    hls.attachMedia(camVideo);
+    hls.attachMedia(videoEl);
     hls.on(Hls.Events.MANIFEST_PARSED, () => {
-      camVideo.play().catch(() => {});
-      camLoading.classList.add('hidden');
+      videoEl.play().catch(() => {});
+      loadingEl.classList.add('hidden');
     });
     hls.on(Hls.Events.ERROR, (ev, data) => {
-      if (data.fatal) camLoadingText.textContent = 'Stream tijdelijk niet beschikbaar';
+      if (data.fatal) loadingTextEl.textContent = 'Stream tijdelijk niet beschikbaar';
     });
-    currentHls = hls;
-  } else if (camVideo.canPlayType('application/vnd.apple.mpegurl')) {
-    camVideo.src = cam.url;
-    camVideo.addEventListener('loadedmetadata', () => {
-      camVideo.play().catch(() => {});
-      camLoading.classList.add('hidden');
+    hlsInstances[key] = hls;
+  } else if (videoEl.canPlayType('application/vnd.apple.mpegurl')) {
+    videoEl.src = cam.url;
+    videoEl.addEventListener('loadedmetadata', () => {
+      videoEl.play().catch(() => {});
+      loadingEl.classList.add('hidden');
     }, { once: true });
   } else {
-    camLoadingText.textContent = 'Browser niet ondersteund';
+    loadingTextEl.textContent = 'Browser niet ondersteund';
   }
+}
+
+function startCameras() {
+  startCameraSlot('cam1',
+    document.getElementById('camVideo1'),
+    document.getElementById('camLoading1'),
+    document.getElementById('camLoadingText1'));
+  startCameraSlot('cam2',
+    document.getElementById('camVideo2'),
+    document.getElementById('camLoading2'),
+    document.getElementById('camLoadingText2'));
 }
 
 // ── Klokken ───────────────────────────────────────────────────────────────────
@@ -1244,12 +1502,15 @@ function utcString() {
 }
 
 setInterval(() => {
-  document.getElementById('utcClock').textContent = utcString();
-  camTs.textContent = utcString();
+  const t = utcString();
+  document.getElementById('utcClock').textContent = t;
+  const ts1 = document.getElementById('camTimestamp1');
+  const ts2 = document.getElementById('camTimestamp2');
+  if (ts1) ts1.textContent = t;
+  if (ts2) ts2.textContent = t;
 }, 1000);
 
 document.getElementById('utcClock').textContent = utcString();
-camTs.textContent = utcString();
 
 // ── Scan display ──────────────────────────────────────────────────────────────
 // Bouwt een scrollende lijst van kanalen in het scan-venster.
@@ -1316,7 +1577,268 @@ function startScan() {
   }, 800);
 }
 
-// (KNRM tracker via VesselFinder embed — geen JS nodig)
+// ── Getijden West-Terschelling (RWS Waterwebservices) ────────────────────────
+const RWS_ENDPOINT = 'https://waterwebservices.rijkswaterstaat.nl/ONLINEWAARNEMINGENSERVICES_DBO/OphalenWaarnemingen';
+
+async function fetchGetijden() {
+  // Vraag hoog/laagwaterdata voor vandaag en morgen op
+  const now    = new Date();
+  const start  = new Date(now); start.setHours(0,0,0,0);
+  const end    = new Date(now); end.setDate(end.getDate() + 2); end.setHours(23,59,59,0);
+
+  const fmt = d => d.toISOString().replace('Z', '+00:00');
+
+  const body = {
+    Locatie: { Code: 'TERHSLL', X: 5.21806, Y: 53.36917 },
+    AquoPlusWaarnemingMetadata: {
+      AquoMetadata: { Compartiment: { Code: 'OW' }, Grootheid: { Code: 'WATHTE' } }
+    },
+    Periode: { Begindatumtijd: fmt(start), Einddatumtijd: fmt(end) },
+    // Groeperingswaarde voor hoog/laag extremen
+    Groeperingsperiode: 'GETETBRKD2'
+  };
+
+  try {
+    const r    = await fetch(RWS_ENDPOINT, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+    const json = await r.json();
+
+    if (!json.WaarnemingenLijst || !json.WaarnemingenLijst.length) {
+      throw new Error('Geen data');
+    }
+
+    const entries = json.WaarnemingenLijst[0].MetingenLijst || [];
+    renderGetijden(entries);
+    document.getElementById('tijLed').classList.add('rx');
+    document.getElementById('tijUpdated').textContent =
+      'Bron: RWS Waterwebservices · Bijgewerkt: ' + new Date().toLocaleTimeString('nl-NL', { hour:'2-digit', minute:'2-digit' });
+
+  } catch(e) {
+    // Fallback: toon statische data van waterkaart.net die we al kennen
+    renderGetijdenFallback();
+    document.getElementById('tijUpdated').textContent = 'Live data tijdelijk niet beschikbaar · Astronomische verwachting';
+  }
+}
+
+function renderGetijden(entries) {
+  const tbody    = document.getElementById('tijBody');
+  const nowMs    = Date.now();
+  let   nextIdx  = -1;
+
+  // Zoek het eerstvolgende hoog/laag water
+  const rows = entries.map((m, i) => {
+    const t    = new Date(m.Tijdstip);
+    const val  = Math.round(m.Meetwaarde.Waarde_Numeriek * 100); // m → cm
+    const type = m.WaarnemingMetadata?.Grootheid?.Code === 'WATHTE'
+      ? (val > 0 ? 'hoog' : 'laag') : 'laag';
+    return { t, val, type, future: t.getTime() > nowMs };
+  });
+
+  // Eerste toekomstige rij markeren
+  nextIdx = rows.findIndex(r => r.future);
+
+  // Huidige waterstand: dichtstbijzijnde meting
+  const nowD = new Date();
+  const closest = rows.reduce((a, b) =>
+    Math.abs(a.t - nowD) < Math.abs(b.t - nowD) ? a : b, rows[0]);
+  if (closest) {
+    document.getElementById('tijWaterstand').textContent = closest.val > 0 ? '+' + closest.val : closest.val;
+    document.getElementById('tijMeettijd').textContent =
+      closest.t.toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' });
+  }
+
+  // Volgend hoog/laag
+  if (nextIdx >= 0) {
+    const nxt = rows[nextIdx];
+    document.getElementById('tijNextLabel').textContent = nxt.type === 'hoog' ? 'Volgend hoogwater' : 'Volgend laagwater';
+    document.getElementById('tijNextValue').textContent = nxt.t.toLocaleTimeString('nl-NL', { hour:'2-digit', minute:'2-digit' });
+    document.getElementById('tijNextUnit').textContent  = nxt.t.toLocaleDateString('nl-NL', { weekday:'short' });
+    document.getElementById('tijNextTile').classList.toggle('alert', nxt.type === 'laag');
+  }
+
+  // Tabel
+  tbody.innerHTML = rows.map((r, i) => {
+    const dag   = r.t.toLocaleDateString('nl-NL', { weekday: 'short', day: 'numeric', month: 'short' });
+    const tijd  = r.t.toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' });
+    const badge = `<span class="tij-badge ${r.type}">${r.type === 'hoog' ? '▲ Hoog' : '▽ Laag'}</span>`;
+    const nap   = r.val > 0 ? '+' + r.val : String(r.val);
+    const cls   = [r.type, i === nextIdx ? 'next' : ''].filter(Boolean).join(' ');
+    return `<tr class="${cls}"><td>${dag}</td><td>${tijd}</td><td>${badge}</td><td>${nap} cm</td></tr>`;
+  }).join('');
+}
+
+function renderGetijdenFallback() {
+  // Statische data gebaseerd op astronomische verwachting van waterkaart.net (13–14 mei 2026)
+  const fallback = [
+    { label: 'di 13 mei', tijd: '06:53', type: 'hoog', nap: '+44' },
+    { label: 'di 13 mei', tijd: '12:53', type: 'laag', nap: '-91' },
+    { label: 'di 13 mei', tijd: '19:18', type: 'hoog', nap: '+82' },
+    { label: 'wo 14 mei', tijd: '01:41', type: 'laag', nap: '-108' },
+    { label: 'wo 14 mei', tijd: '07:54', type: 'hoog', nap: '+55' },
+    { label: 'wo 14 mei', tijd: '13:59', type: 'laag', nap: '-103' },
+    { label: 'wo 14 mei', tijd: '20:15', type: 'hoog', nap: '+88' },
+  ];
+  document.getElementById('tijBody').innerHTML = fallback.map(r => {
+    const badge = `<span class="tij-badge ${r.type}">${r.type === 'hoog' ? '▲ Hoog' : '▽ Laag'}</span>`;
+    return `<tr class="${r.type}"><td>${r.label}</td><td>${r.tijd}</td><td>${badge}</td><td>${r.nap} cm</td></tr>`;
+  }).join('');
+}
+
+// ── Weerstation (Open-Meteo · KNMI HARMONIE AROME) ───────────────────────────
+// Coördinaten Terschelling-West
+const WEATHER_URL =
+  'https://api.open-meteo.com/v1/forecast' +
+  '?latitude=53.3687&longitude=5.2174' +
+  '&current=windspeed_10m,winddirection_10m,windgusts_10m,visibility' +
+  '&wind_speed_unit=kn' +
+  '&models=knmi_harmonie_arome_netherlands' +
+  '&timezone=Europe%2FAmsterdam';
+
+const DIR_LABELS = ['N','NNO','NO','ONO','O','OZO','ZO','ZZO','Z','ZZW','ZW','WZW','W','WNW','NW','NNW'];
+
+function degToCompass(deg) {
+  return DIR_LABELS[Math.round(deg / 22.5) % 16];
+}
+
+function bftFromKnots(kn) {
+  const scale = [1,3,6,10,16,21,27,33,40,47,55,63];
+  for (let i = 0; i < scale.length; i++) {
+    if (kn < scale[i]) return i;
+  }
+  return 12;
+}
+
+function buildBftBar(bft) {
+  const bar = document.getElementById('bftBar');
+  bar.innerHTML = '';
+  for (let i = 0; i < 12; i++) {
+    const seg = document.createElement('div');
+    seg.className = 'bft-seg';
+    if (i < bft) {
+      seg.classList.add(bft <= 4 ? 'on-green' : bft <= 7 ? 'on-orange' : 'on-red');
+    }
+    bar.appendChild(seg);
+  }
+}
+
+async function fetchWeather() {
+  try {
+    const r    = await fetch(WEATHER_URL);
+    const json = await r.json();
+    const c    = json.current;
+
+    const windKn   = Math.round(c.windspeed_10m);
+    const gustKn   = Math.round(c.windgusts_10m);
+    const dirDeg   = Math.round(c.winddirection_10m);
+    const visKm    = (c.visibility / 1000).toFixed(1);
+    const bft      = bftFromKnots(windKn);
+    const dirText  = degToCompass(dirDeg);
+    const isAlert  = bft >= 6;
+
+    document.getElementById('wvWind').textContent   = windKn;
+    document.getElementById('wvGusts').textContent  = gustKn;
+    document.getElementById('wvDir').textContent    = dirDeg + '°';
+    document.getElementById('wvDirText').textContent = dirText;
+    document.getElementById('wvVis').textContent    = visKm;
+
+    // Windrose pijl
+    document.getElementById('windArrow').setAttribute('transform', `rotate(${dirDeg} 22 22)`);
+
+    // Beaufort-balk
+    buildBftBar(bft);
+
+    // Kleur rood bij waarschuwing
+    document.getElementById('wtWind').classList.toggle('alert', isAlert);
+
+    // Tijdstempel
+    const t = new Date(c.time);
+    document.getElementById('weatherUpdated').textContent =
+      `Bijgewerkt: ${t.toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' })} — KNMI HARMONIE AROME`;
+
+    document.getElementById('weatherLed').classList.add('rx');
+  } catch(e) {
+    document.getElementById('weatherUpdated').textContent = 'Weerdata tijdelijk niet beschikbaar';
+  }
+}
+
+// ── Kustwacht / vaarwegberichten (RWS plain-text feed) ───────────────────────
+const KUWA_URL = 'https://waterberichtgeving.rws.nl/dynamisch/textpagina/kuwabericht.txt';
+
+// Probeer achtereenvolgens: direct → proxy 1 → proxy 2
+async function fetchWithFallback(url) {
+  // 1. Direct (werkt als RWS CORS toestaat, wat ze voor .txt doen)
+  try {
+    const r = await fetch(url, { cache: 'no-cache' });
+    if (r.ok) return await r.text();
+  } catch(_) {}
+
+  // 2. corsproxy.io
+  try {
+    const r = await fetch('https://corsproxy.io/?' + encodeURIComponent(url), { cache: 'no-cache' });
+    if (r.ok) return await r.text();
+  } catch(_) {}
+
+  // 3. allorigins als laatste redmiddel (retourneert JSON met .contents)
+  try {
+    const r    = await fetch('https://api.allorigins.win/get?url=' + encodeURIComponent(url), { cache: 'no-cache' });
+    const json = await r.json();
+    if (json.contents) return json.contents;
+  } catch(_) {}
+
+  throw new Error('Alle proxies gefaald');
+}
+
+function extractTexelSection(text) {
+  const start = text.indexOf('KUSTDISTRICT TEXEL');
+  if (start === -1) return text.slice(0, 1400);
+  const end = text.indexOf('~~~~', start + 10);
+  return end !== -1 ? text.slice(start, end).trim() : text.slice(start, start + 900).trim();
+}
+
+function highlightText(text) {
+  return text
+    .replace(/(WAARSCHUWING|WIND BFT|STORM|WINDSTOTEN|GEEN)/g,
+      '<span class="bericht-highlight">$1</span>');
+}
+
+function buildTicker(text) {
+  const lines = text.split('\n')
+    .map(l => l.trim())
+    .filter(l => l.length > 8 && !l.startsWith('...') && !l.startsWith('|'));
+  const summary = lines.slice(0, 8).join('  ·  ');
+  const ticker  = document.getElementById('tickerInner');
+  ticker.innerHTML = '      ' + summary + '      ';
+  const dur = Math.max(35, Math.round(summary.length * 0.22));
+  ticker.style.animationDuration = dur + 's';
+}
+
+async function fetchVaarwegberichten() {
+  const scroll = document.getElementById('berichtScroll');
+  const ticker = document.getElementById('tickerInner');
+  try {
+    const text  = await fetchWithFallback(KUWA_URL);
+    const texel = extractTexelSection(text);
+    scroll.innerHTML = highlightText(texel);
+    buildTicker(texel);
+  } catch(e) {
+    scroll.textContent = 'Berichten tijdelijk niet beschikbaar.\nRaadpleeg: waterberichtgeving.rws.nl';
+    ticker.textContent = 'Vaarwegberichten tijdelijk niet beschikbaar — raadpleeg waterberichtgeving.rws.nl';
+  }
+}
+
+// Start beide feeds na boot
+function startDataFeeds() {
+  fetchWeather();
+  fetchVaarwegberichten();
+  fetchGetijden();
+  setInterval(fetchWeather,          10 * 60 * 1000);
+  setInterval(fetchVaarwegberichten, 60 * 60 * 1000);
+  setInterval(fetchGetijden,         30 * 60 * 1000);
+}
+
 </script>
 </body>
 </html>
