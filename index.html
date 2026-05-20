@@ -591,126 +591,209 @@
     .ticker-inner { font-size: 9px; }
   }
 
-  /* ── Weerstation paneel ── */
-  .weather-grid {
+  /* ── Weerstation + Getijden: gedeelde tegel-stijl ── */
+  .data-grid {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 12px;
-    margin-bottom: 16px;
+    gap: 10px;
+    margin-bottom: 14px;
+  }
+  .data-grid-4 { grid-template-columns: repeat(4, 1fr); }
+  .data-grid-3 { grid-template-columns: repeat(3, 1fr); }
+  .data-grid-2 { grid-template-columns: repeat(2, 1fr); }
+  @media (max-width: 700px) {
+    .data-grid-4, .data-grid-3 { grid-template-columns: repeat(2, 1fr); }
+  }
+  @media (max-width: 400px) {
+    .data-grid-4, .data-grid-3, .data-grid-2 { grid-template-columns: 1fr; }
   }
 
-  @media (max-width: 640px) {
-    .weather-grid { grid-template-columns: repeat(2, 1fr); }
-  }
-
-  .weather-tile {
+  .dtile {
     background: #060809;
     border: 1px solid #0f1318;
     border-radius: 8px;
-    padding: 14px 16px;
+    padding: 12px 14px;
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: 4px;
     box-shadow: inset 0 2px 6px rgba(0,0,0,0.4);
   }
-
-  .weather-tile-label {
+  .dtile-label {
     font-size: 9px;
     letter-spacing: 3px;
     color: var(--text-dim);
     text-transform: uppercase;
   }
-
-  .weather-tile-value {
+  .dtile-value {
     font-family: 'Orbitron', monospace;
-    font-size: 26px;
+    font-size: 28px;
     font-weight: 700;
     color: var(--accent);
     line-height: 1;
-    text-shadow: 0 0 14px rgba(232,160,32,0.3);
+    text-shadow: 0 0 14px rgba(232,160,32,0.25);
   }
-
-  .weather-tile-unit {
+  .dtile-value.small { font-size: 18px; }
+  .dtile-unit {
     font-size: 10px;
     letter-spacing: 2px;
     color: var(--text-dim);
     text-transform: uppercase;
   }
+  .dtile.warn .dtile-value { color: var(--red); text-shadow: 0 0 12px rgba(192,57,43,0.4); }
+  .dtile.low  .dtile-value { color: #5a8fa8; text-shadow: 0 0 12px rgba(90,143,168,0.3); }
 
-  .weather-tile.alert .weather-tile-value { color: var(--red); text-shadow: 0 0 12px rgba(192,57,43,0.4); }
-
-  /* Windroos */
-  .wind-rose {
-    position: relative;
-    width: 44px;
-    height: 44px;
-    margin-top: 2px;
-  }
-  .wind-rose svg { width: 100%; height: 100%; }
-
-  /* Beaufort bar */
-  .bft-bar {
-    display: flex;
-    gap: 2px;
-    margin-top: 4px;
-  }
+  /* Beaufort-balk */
+  .bft-bar { display: flex; gap: 2px; margin-top: 5px; }
   .bft-seg {
-    flex: 1;
-    height: 4px;
-    border-radius: 2px;
-    background: #1a2030;
-    transition: background 0.4s;
+    flex: 1; height: 4px; border-radius: 2px;
+    background: #1a2030; transition: background 0.4s;
   }
   .bft-seg.on-green  { background: var(--green); }
   .bft-seg.on-orange { background: #f39c12; }
   .bft-seg.on-red    { background: var(--red); }
 
-  /* Weerbericht ticker */
-  .ticker-wrap {
+  /* Windroos */
+  .wind-rose { width: 44px; height: 44px; margin-top: 4px; }
+  .wind-rose svg { width: 100%; height: 100%; }
+
+  /* Marifoonbericht blok */
+  .marifoon-block {
     background: #060809;
     border: 1px solid #0f1318;
-    border-radius: 6px;
-    padding: 10px 16px;
-    overflow: hidden;
-    position: relative;
-    height: 36px;
-    display: flex;
-    align-items: center;
+    border-radius: 8px;
+    padding: 14px 16px;
+    margin-bottom: 14px;
   }
-
-  .ticker-inner {
+  .marifoon-header {
     display: flex;
-    white-space: nowrap;
-    animation: ticker-scroll 60s linear infinite;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+  }
+  .marifoon-district {
     font-family: 'Orbitron', monospace;
     font-size: 10px;
-    letter-spacing: 2px;
+    letter-spacing: 3px;
     color: var(--accent);
     text-transform: uppercase;
   }
-
-  .ticker-inner.paused { animation-play-state: paused; }
-
-  @keyframes ticker-scroll {
-    0%   { transform: translateX(100%); }
-    100% { transform: translateX(-100%); }
-  }
-
-  .ticker-label {
-    font-size: 9px;
-    letter-spacing: 3px;
-    color: var(--text-dim);
-    text-transform: uppercase;
-    margin-bottom: 8px;
-  }
-
-  .weather-updated {
+  .marifoon-time {
     font-size: 9px;
     letter-spacing: 2px;
     color: var(--text-dim);
-    text-align: right;
+    text-transform: uppercase;
+  }
+  .marifoon-warning {
+    font-family: 'Orbitron', monospace;
+    font-size: 11px;
+    letter-spacing: 2px;
+    padding: 6px 12px;
+    border-radius: 4px;
+    margin-bottom: 10px;
+    text-transform: uppercase;
+  }
+  .marifoon-warning.geen {
+    background: rgba(39,174,96,0.12);
+    color: var(--green);
+    border: 1px solid rgba(39,174,96,0.25);
+  }
+  .marifoon-warning.actief {
+    background: rgba(192,57,43,0.15);
+    color: var(--red);
+    border: 1px solid rgba(192,57,43,0.3);
+    animation: blink 1.4s infinite;
+  }
+  .marifoon-body {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 13px;
+    line-height: 1.55;
+    color: var(--text);
+    white-space: pre-wrap;
+    letter-spacing: 0.3px;
+  }
+  .marifoon-body .hl { color: var(--accent); font-weight: 600; }
+
+  /* Getijden: tabel */
+  .tij-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 13px;
+    letter-spacing: 0.5px;
+  }
+  .tij-table th {
+    font-size: 9px; letter-spacing: 3px;
+    color: var(--text-dim); text-transform: uppercase;
+    padding: 6px 12px; text-align: left;
+    border-bottom: 1px solid var(--rim);
+  }
+  .tij-table td {
+    padding: 9px 12px;
+    border-bottom: 1px solid #0f1318;
+    color: var(--text);
+  }
+  .tij-table tr:last-child td { border-bottom: none; }
+  .tij-table tr.hoog td { color: var(--accent); }
+  .tij-table tr.laag td { color: #5a8fa8; }
+  .tij-table tr.next td { background: rgba(232,160,32,0.06); }
+  .tij-table tr.next td:first-child { border-left: 2px solid var(--accent); }
+  .tij-badge {
+    display: inline-block;
+    font-family: 'Orbitron', monospace;
+    font-size: 9px; letter-spacing: 1px;
+    padding: 2px 7px; border-radius: 3px;
+    text-transform: uppercase;
+  }
+  .tij-badge.hoog { background: rgba(232,160,32,0.15); color: var(--accent); }
+  .tij-badge.laag { background: rgba(90,143,168,0.15); color: #5a8fa8; }
+
+  /* Getijden: mini grafiek */
+  .tij-graph-wrap {
+    background: #060809;
+    border: 1px solid #0f1318;
+    border-radius: 6px;
+    overflow: hidden;
+    height: 70px;
+    margin-bottom: 14px;
+  }
+  canvas#tijGraph { display: block; width: 100%; height: 70px; }
+
+  /* Gedeelde footer-regel */
+  .panel-updated {
+    font-size: 9px; letter-spacing: 2px;
+    color: var(--text-dim); text-align: right;
     margin-top: 8px;
   }
+
+  /* Ticker — blijft voor de marifoonwaarschuwings-samenvatting bovenaan */
+  .ticker-wrap {
+    background: #060809; border: 1px solid #0f1318;
+    border-radius: 6px; padding: 0 16px;
+    overflow: hidden; height: 34px;
+    display: flex; align-items: center;
+    margin-bottom: 14px;
+  }
+  .ticker-inner {
+    display: flex; white-space: nowrap;
+    animation: ticker-scroll 60s linear infinite;
+    font-family: 'Orbitron', monospace;
+    font-size: 10px; letter-spacing: 2px;
+    color: var(--accent); text-transform: uppercase;
+  }
+  @keyframes ticker-scroll {
+    0%   { transform: translateX(100vw); }
+    100% { transform: translateX(-100%); }
+  }
+
+  /* Legacy aliases — voor alle bestaande code die weather-tile/weather-grid gebruikt */
+  .weather-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; margin-bottom: 16px; }
+  @media (max-width: 640px) { .weather-grid { grid-template-columns: repeat(2,1fr); } }
+  .weather-tile { background:#060809; border:1px solid #0f1318; border-radius:8px; padding:14px 16px; display:flex; flex-direction:column; gap:6px; }
+  .weather-tile-label { font-size:9px; letter-spacing:3px; color:var(--text-dim); text-transform:uppercase; }
+  .weather-tile-value { font-family:'Orbitron',monospace; font-size:26px; font-weight:700; color:var(--accent); line-height:1; }
+  .weather-tile-unit  { font-size:10px; letter-spacing:2px; color:var(--text-dim); text-transform:uppercase; }
+  .weather-tile.alert .weather-tile-value { color:var(--red); }
+  .ticker-label { font-size:9px; letter-spacing:3px; color:var(--text-dim); text-transform:uppercase; margin-bottom:8px; }
+  .weather-updated { font-size:9px; letter-spacing:2px; color:var(--text-dim); text-align:right; margin-top:8px; }
 
   /* ── AIS paneel ── */
   .ais-map-wrap {
@@ -959,40 +1042,39 @@
 
 </div>
 
-<!-- ═══════════════════════════ WEERSTATION ═══════════════════════════ -->
+<!-- ═══════════════════════ WEERSTATION — HOORN TERSCHELLING ═══════════════ -->
 <div class="panel">
 
   <div class="camera-header">
-    <div class="camera-title">Weerstation — Terschelling</div>
+    <div class="camera-title">Weerstation — Hoorn Terschelling</div>
     <div class="camera-controls">
       <div class="cam-live-badge">
-        <div class="led rx" id="weatherLed"></div>KNMI LIVE
+        <div class="led rx" id="weatherLed"></div>OPEN-METEO
       </div>
     </div>
   </div>
 
-  <div class="weather-grid">
+  <!-- Rij 1: wind + richting + stoten + temp -->
+  <div class="data-grid data-grid-4" style="margin-bottom:10px;">
 
-    <div class="weather-tile" id="wtWind">
-      <div class="weather-tile-label">Wind</div>
-      <div class="weather-tile-value" id="wvWind">—</div>
-      <div class="weather-tile-unit">knopen</div>
+    <div class="dtile" id="dtWind">
+      <div class="dtile-label">Wind</div>
+      <div class="dtile-value" id="dvWind">—</div>
+      <div class="dtile-unit">knopen</div>
       <div class="bft-bar" id="bftBar"></div>
     </div>
 
-    <div class="weather-tile" id="wtDir">
-      <div class="weather-tile-label">Richting</div>
-      <div class="weather-tile-value" id="wvDir">—</div>
-      <div class="weather-tile-unit" id="wvDirText">—</div>
+    <div class="dtile">
+      <div class="dtile-label">Richting</div>
+      <div class="dtile-value" id="dvDir">—</div>
+      <div class="dtile-unit" id="dvDirText">—</div>
       <div class="wind-rose">
         <svg viewBox="0 0 44 44" id="windRoseSvg">
-          <!-- achtergrond kompas -->
           <circle cx="22" cy="22" r="20" fill="none" stroke="#1a2430" stroke-width="1"/>
           <text x="22" y="7"  text-anchor="middle" fill="#546e7a" font-size="6" font-family="Barlow Condensed">N</text>
           <text x="22" y="40" text-anchor="middle" fill="#546e7a" font-size="6" font-family="Barlow Condensed">S</text>
           <text x="5"  y="24" text-anchor="middle" fill="#546e7a" font-size="6" font-family="Barlow Condensed">W</text>
           <text x="39" y="24" text-anchor="middle" fill="#546e7a" font-size="6" font-family="Barlow Condensed">O</text>
-          <!-- pijl, roteerbaar via transform -->
           <g id="windArrow" transform="rotate(0 22 22)">
             <polygon points="22,6 19,22 22,19 25,22" fill="#e8a020"/>
             <polygon points="22,38 19,22 22,25 25,22" fill="#546e7a"/>
@@ -1001,63 +1083,105 @@
       </div>
     </div>
 
-    <div class="weather-tile" id="wtGusts">
-      <div class="weather-tile-label">Windstoten</div>
-      <div class="weather-tile-value" id="wvGusts">—</div>
-      <div class="weather-tile-unit">knopen</div>
+    <div class="dtile" id="dtGusts">
+      <div class="dtile-label">Windstoten</div>
+      <div class="dtile-value" id="dvGusts">—</div>
+      <div class="dtile-unit">knopen</div>
     </div>
 
-    <div class="weather-tile" id="wtVis">
-      <div class="weather-tile-label">Zicht</div>
-      <div class="weather-tile-value" id="wvVis">—</div>
-      <div class="weather-tile-unit">km</div>
+    <div class="dtile">
+      <div class="dtile-label">Temperatuur</div>
+      <div class="dtile-value" id="dvTemp">—</div>
+      <div class="dtile-unit">°C</div>
     </div>
 
   </div>
 
-  <!-- Kustwacht bericht ticker -->
-  <div class="ticker-label">Kustwacht Bericht — District Harlingen</div>
-  <div class="ticker-wrap" id="tickerWrap">
-    <div class="ticker-inner" id="tickerInner">Bericht laden…</div>
+  <!-- Rij 2: zicht + druk + vochtigheid + dauwpunt -->
+  <div class="data-grid data-grid-4" style="margin-bottom:14px;">
+
+    <div class="dtile">
+      <div class="dtile-label">Zicht</div>
+      <div class="dtile-value" id="dvVis">—</div>
+      <div class="dtile-unit">km</div>
+    </div>
+
+    <div class="dtile">
+      <div class="dtile-label">Luchtdruk</div>
+      <div class="dtile-value small" id="dvPres">—</div>
+      <div class="dtile-unit">hPa</div>
+    </div>
+
+    <div class="dtile">
+      <div class="dtile-label">Vochtigheid</div>
+      <div class="dtile-value" id="dvHum">—</div>
+      <div class="dtile-unit">%</div>
+    </div>
+
+    <div class="dtile">
+      <div class="dtile-label">Dauwpunt</div>
+      <div class="dtile-value" id="dvDew">—</div>
+      <div class="dtile-unit">°C</div>
+    </div>
+
   </div>
 
-  <div class="weather-updated" id="weatherUpdated">Laden…</div>
+  <!-- Marifoonbericht KNMI — district Harlingen -->
+  <div class="marifoon-block">
+    <div class="marifoon-header">
+      <div class="marifoon-district">▸ Marifoonbericht KNMI — District Harlingen</div>
+      <div class="marifoon-time" id="marifoonTime">—</div>
+    </div>
+    <div class="marifoon-warning geen" id="marifoonWarning">Waarschuwing laden…</div>
+    <div class="marifoon-body" id="marifoonBody">—</div>
+  </div>
+
+  <div class="panel-updated" id="weatherUpdated">Laden…</div>
 
 </div>
 
-<!-- ═══════════════════════════ GETIJDEN ═══════════════════════════ -->
+<!-- ════════════════════════ GETIJDEN — WEST-TERSCHELLING ════════════════════ -->
 <div class="panel">
 
   <div class="camera-header">
     <div class="camera-title">Getijden — West-Terschelling</div>
     <div class="camera-controls">
       <div class="cam-live-badge">
-        <div class="led rx" id="tijLed"></div>RWS DATA
+        <div class="led rx" id="tijLed"></div>RWS LIVE
       </div>
     </div>
   </div>
 
-  <!-- Actuele waterstand -->
-  <div class="weather-grid" style="grid-template-columns: repeat(3,1fr); margin-bottom:16px;">
-    <div class="weather-tile">
-      <div class="weather-tile-label">Waterstand NAP</div>
-      <div class="weather-tile-value" id="tijWaterstand">—</div>
-      <div class="weather-tile-unit">cm</div>
+  <!-- Actuele stand + volgende + tijd -->
+  <div class="data-grid data-grid-3" style="margin-bottom:12px;">
+
+    <div class="dtile" id="dtWaterstand">
+      <div class="dtile-label">Waterstand NAP</div>
+      <div class="dtile-value" id="tijWaterstand">—</div>
+      <div class="dtile-unit">cm</div>
     </div>
-    <div class="weather-tile" id="tijNextTile">
-      <div class="weather-tile-label" id="tijNextLabel">Volgend</div>
-      <div class="weather-tile-value" id="tijNextValue">—</div>
-      <div class="weather-tile-unit" id="tijNextUnit">—</div>
+
+    <div class="dtile" id="dtNextTide">
+      <div class="dtile-label" id="tijNextLabel">Volgend HW/LW</div>
+      <div class="dtile-value small" id="tijNextValue">—</div>
+      <div class="dtile-unit" id="tijNextUnit">—</div>
     </div>
-    <div class="weather-tile">
-      <div class="weather-tile-label">Meettijd</div>
-      <div class="weather-tile-value" style="font-size:18px;" id="tijMeettijd">—</div>
-      <div class="weather-tile-unit">lokaal</div>
+
+    <div class="dtile">
+      <div class="dtile-label">Gemeten om</div>
+      <div class="dtile-value small" id="tijMeettijd">—</div>
+      <div class="dtile-unit">lokaal</div>
     </div>
+
   </div>
 
-  <!-- Getijdentabel vandaag + morgen -->
-  <table class="tij-table" id="tijTable">
+  <!-- Mini getijgrafiek (canvas) -->
+  <div class="tij-graph-wrap">
+    <canvas id="tijGraph"></canvas>
+  </div>
+
+  <!-- Getijdentabel: vandaag t/m overmorgen -->
+  <table class="tij-table">
     <thead>
       <tr>
         <th>Dag</th>
@@ -1071,7 +1195,7 @@
     </tbody>
   </table>
 
-  <div class="weather-updated" id="tijUpdated">Laden…</div>
+  <div class="panel-updated" id="tijUpdated">Laden…</div>
 
 </div>
 
@@ -1587,269 +1711,48 @@ function startScan() {
   }, 750);
 }
 
-// ── Getijden West-Terschelling (Rijkswaterstaat Waterwebservices) ────────────
-// Gebruikt de officiële RWS DDL Waterwebservices (live sinds dec 2025).
-// Domein: ddapi20-waterwebservices.rijkswaterstaat.nl
-// Station: terschelling.west (waterstand NAP in cm + getij-extremen via GETETBRKD2)
-// Gratis, geen API key vereist.
+// ═══════════════════════════════════════════════════════════════════════════════
+// WEERSTATION — Open-Meteo · Station Hoorn Terschelling (lat 53.392, lon 5.346)
+// ═══════════════════════════════════════════════════════════════════════════════
 
-// Nieuw RWS domein (live seit december 2025; oud waterwebservices.rijkswaterstaat.nl geeft 301)
-const RWS_BASE     = 'https://ddapi20-waterwebservices.rijkswaterstaat.nl';
-const RWS_LAATSTE  = RWS_BASE + '/ONLINEWAARNEMINGENSERVICES/OphalenLaatsteWaarnemingen';
-const RWS_PERIODE  = RWS_BASE + '/ONLINEWAARNEMINGENSERVICES/OphalenWaarnemingen';
-
-// Locatiecode uit de RWS-catalogus (WATHTE + OW → terschelling.west)
-const RWS_LOCATIE  = 'terschelling.west';
-
-async function fetchRWSWaterstand() {
-  const body = {
-    "AquoPlusWaarnemingMetadataLijst": [{
-      "AquoMetadata": {
-        "Compartiment": { "Code": "OW" },
-        "Grootheid":    { "Code": "WATHTE" }
-      }
-    }],
-    "LocatieLijst": [{ "Code": RWS_LOCATIE }]
-  };
-
-  const r    = await fetch(RWS_LAATSTE, {
-    method:  'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body:    JSON.stringify(body)
-  });
-  const json = await r.json();
-  if (!json?.Succesvol) return null;
-
-  // Kies de meting met het meest recente tijdstip (ProcesType "meting")
-  const candidates = (json.WaarnemingenLijst ?? [])
-    .filter(w => w.AquoMetadata?.ProcesType === 'meting')
-    .flatMap(w => w.MetingenLijst ?? [])
-    .filter(m => m?.Meetwaarde?.Waarde_Numeriek != null);
-
-  if (!candidates.length) return null;
-  candidates.sort((a, b) => new Date(b.Tijdstip) - new Date(a.Tijdstip));
-  const best = candidates[0];
-
-  return {
-    peil: Math.round(best.Meetwaarde.Waarde_Numeriek),
-    tijd: new Date(best.Tijdstip)
-  };
-}
-
-async function fetchRWSGetijtafel() {
-  const now   = new Date();
-  const begin = new Date(now); begin.setUTCHours(0,0,0,0);
-  const eind  = new Date(begin); eind.setUTCDate(eind.getUTCDate() + 3);
-  const fmt   = d => d.toISOString().replace(/\.\d{3}Z$/, '.000+00:00');
-
-  const body = {
-    "AquoPlusWaarnemingMetadata": {
-      "AquoMetadata": {
-        "Compartiment": { "Code": "OW" },
-        "Grootheid":    { "Code": "WATHTE" },
-        "Groepering":   { "Code": "GETETBRKD2" }
-      }
-    },
-    "Locatie": { "Code": RWS_LOCATIE },
-    "Periode": { "Begindatumtijd": fmt(begin), "Einddatumtijd": fmt(eind) }
-  };
-
-  const r    = await fetch(RWS_PERIODE, {
-    method:  'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body:    JSON.stringify(body)
-  });
-  const json = await r.json();
-  if (!json?.Succesvol) return [];
-
-  const metingen = json?.WaarnemingenLijst?.[0]?.MetingenLijst ?? [];
-  return metingen
-    .filter(m => m?.Meetwaarde?.Waarde_Numeriek != null)
-    .map(m => ({
-      t:    new Date(m.Tijdstip),
-      val:  Math.round(m.Meetwaarde.Waarde_Numeriek),
-      // GETETBRKD2 geeft afwisselend HW (+) en LW (−); teken bepaalt type
-      type: m.Meetwaarde.Waarde_Numeriek >= 0 ? 'hoog' : 'laag'
-    }))
-    .filter(e => !isNaN(e.t.getTime()))
-    .sort((a, b) => a.t - b.t);
-}
-
-async function fetchGetijden() {
-  try {
-    // Haal actuele waterstand en getij-extremen parallel op
-    const [standData, extremen] = await Promise.allSettled([
-      fetchRWSWaterstand(),
-      fetchRWSGetijtafel()
-    ]);
-
-    // ── Actuele waterstand ────────────────────────────────────────────────────
-    if (standData.status === 'fulfilled' && standData.value) {
-      const { peil, tijd } = standData.value;
-      document.getElementById('tijWaterstand').textContent =
-        peil >= 0 ? '+' + peil : String(peil);
-      document.getElementById('tijMeettijd').textContent =
-        tijd.toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Amsterdam' });
-    } else {
-      document.getElementById('tijWaterstand').textContent = '—';
-      document.getElementById('tijMeettijd').textContent   = '—';
-    }
-
-    // ── Getijdentafel ─────────────────────────────────────────────────────────
-    let rows = [];
-    if (extremen.status === 'fulfilled' && extremen.value?.length > 0) {
-      rows = extremen.value;
-    } else {
-      // Fallback: bereken extremen uit Open-Meteo als RWS niet reageert
-      rows = await fetchGetijdenFallback();
-    }
-
-    renderGetijden(rows);
-    document.getElementById('tijLed').classList.add('rx');
-
-    const bron = (extremen.status === 'fulfilled' && extremen.value?.length > 0)
-      ? 'Rijkswaterstaat Waterinfo'
-      : 'Open-Meteo (fallback)';
-    document.getElementById('tijUpdated').textContent =
-      'Bron: ' + bron + ' · ' +
-      new Date().toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' });
-
-  } catch(e) {
-    document.getElementById('tijUpdated').textContent = 'Getijdata tijdelijk niet beschikbaar';
-    console.error('fetchGetijden:', e);
-  }
-}
-
-// ── Fallback: Open-Meteo Marine (als RWS onbereikbaar is) ────────────────────
-const MARINE_URL =
-  'https://marine-api.open-meteo.com/v1/marine' +
-  '?latitude=53.37&longitude=5.22' +
-  '&hourly=sea_level_height_msl' +
-  '&forecast_days=3' +
-  '&timezone=Europe%2FAmsterdam';
-
-async function fetchGetijdenFallback() {
-  const r    = await fetch(MARINE_URL);
-  const json = await r.json();
-  const times  = json.hourly.time;
-  const levels = json.hourly.sea_level_height_msl;
-
-  const parseLocal = s => {
-    const [date, time] = s.split('T');
-    const [y,mo,d]     = date.split('-').map(Number);
-    const [h,mi]       = time.split(':').map(Number);
-    return new Date(y, mo-1, d, h, mi);
-  };
-
-  const extremes = [];
-  for (let i = 1; i < levels.length - 1; i++) {
-    const p = levels[i-1], c = levels[i], n = levels[i+1];
-    if (c === null || p === null || n === null) continue;
-    if (c > p && c > n)
-      extremes.push({ t: parseLocal(times[i]), val: Math.round(c * 100), type: 'hoog' });
-    else if (c < p && c < n)
-      extremes.push({ t: parseLocal(times[i]), val: Math.round(c * 100), type: 'laag' });
-  }
-
-  const now      = new Date();
-  const dayStart = new Date(now); dayStart.setHours(0,0,0,0);
-  const limit    = new Date(dayStart); limit.setDate(limit.getDate() + 3);
-  return extremes.filter(e => e.t >= dayStart && e.t <= limit);
-}
-
-function renderGetijden(rows) {
-  const tbody  = document.getElementById('tijBody');
-  const nowMs  = Date.now();
-  const nextIdx = rows.findIndex(r => r.t.getTime() > nowMs);
-
-  // Volgend hoog/laag tegel
-  if (nextIdx >= 0) {
-    const nxt = rows[nextIdx];
-    document.getElementById('tijNextLabel').textContent =
-      nxt.type === 'hoog' ? 'Volgend hoogwater' : 'Volgend laagwater';
-    document.getElementById('tijNextValue').textContent =
-      nxt.t.toLocaleTimeString('nl-NL', { hour:'2-digit', minute:'2-digit' });
-    document.getElementById('tijNextUnit').textContent =
-      nxt.t.toLocaleDateString('nl-NL', { weekday:'short' });
-    document.getElementById('tijNextTile').classList.toggle('alert', nxt.type === 'laag');
-  }
-
-  tbody.innerHTML = rows.map((r, i) => {
-    const dag   = r.t.toLocaleDateString('nl-NL', { weekday:'short', day:'numeric', month:'short' });
-    const tijd  = r.t.toLocaleTimeString('nl-NL', { hour:'2-digit', minute:'2-digit' });
-    const badge = `<span class="tij-badge ${r.type}">${r.type === 'hoog' ? '▲ Hoog' : '▽ Laag'}</span>`;
-    const nap   = r.val >= 0 ? '+' + r.val : String(r.val);
-    const cls   = [r.type, i === nextIdx ? 'next' : ''].filter(Boolean).join(' ');
-    return `<tr class="${cls}"><td>${dag}</td><td>${tijd}</td><td>${badge}</td><td>${nap} cm</td></tr>`;
-  }).join('') || '<tr><td colspan="4" style="text-align:center;color:var(--text-dim);padding:16px;">Geen data</td></tr>';
-}
-
-// ── Windroos micro-animatie ───────────────────────────────────────────────────
-// De naald trilt subtiel rond de werkelijke windrichting — alsof de sensor live meet.
-let windRoseTarget   = 0;   // werkelijke richting uit API (graden)
-let windRoseCurrent  = 0;   // huidige gerenderde hoek (inclusief drift)
-let windRoseAnimId   = null;
-
-function startWindRoseAnimation() {
-  if (windRoseAnimId) return;   // al actief
-
-  let driftPhase  = 0;
-  let noiseOffset = Math.random() * 100;
-
-  function tick() {
-    driftPhase  += 0.018;                    // basis sinus-snelheid
-    noiseOffset += 0.007;
-
-    // Combinatie van twee sinussen + kleine ruis = organisch gevoel
-    const drift =
-      Math.sin(driftPhase)          * 1.8 +   // langzame zwaai ±1.8°
-      Math.sin(driftPhase * 2.3)    * 0.7 +   // snellere trilling ±0.7°
-      (Math.random() - 0.5)         * 0.4;    // miniem stochastisch hapje ±0.2°
-
-    windRoseCurrent = windRoseTarget + drift;
-
-    const arrow = document.getElementById('windArrow');
-    if (arrow) arrow.setAttribute('transform', `rotate(${windRoseCurrent} 22 22)`);
-
-    windRoseAnimId = requestAnimationFrame(tick);
-  }
-
-  windRoseAnimId = requestAnimationFrame(tick);
-}
-
-// ── Weerstation (Open-Meteo · KNMI HARMONIE AROME) ───────────────────────────
-// Coördinaten Terschelling-West
 const WEATHER_URL =
   'https://api.open-meteo.com/v1/forecast' +
-  '?latitude=53.3687&longitude=5.2174' +
-  '&current=windspeed_10m,winddirection_10m,windgusts_10m,visibility' +
+  '?latitude=53.392&longitude=5.346' +
+  '&current=temperature_2m,relative_humidity_2m,dew_point_2m,' +
+  'wind_speed_10m,wind_direction_10m,wind_gusts_10m,visibility,pressure_msl' +
   '&wind_speed_unit=kn' +
-  '&models=knmi_harmonie_arome_netherlands' +
   '&timezone=Europe%2FAmsterdam';
 
 const DIR_LABELS = ['N','NNO','NO','ONO','O','OZO','ZO','ZZO','Z','ZZW','ZW','WZW','W','WNW','NW','NNW'];
-
-function degToCompass(deg) {
-  return DIR_LABELS[Math.round(deg / 22.5) % 16];
-}
-
-function bftFromKnots(kn) {
-  const scale = [1,3,6,10,16,21,27,33,40,47,55,63];
-  for (let i = 0; i < scale.length; i++) {
-    if (kn < scale[i]) return i;
-  }
+const degToCompass = deg => DIR_LABELS[Math.round(deg / 22.5) % 16];
+const bftFromKnots = kn => {
+  const s = [1,3,6,10,16,21,27,33,40,47,55,63];
+  for (let i = 0; i < s.length; i++) if (kn < s[i]) return i;
   return 12;
+};
+
+// Windroos: subtiele naald-animatie
+let windRoseTarget = 0, windRoseCurrent = 0, windRoseAnimId = null;
+function startWindRoseAnimation() {
+  if (windRoseAnimId) return;
+  let dp = 0;
+  (function tick() {
+    dp += 0.018;
+    windRoseCurrent = windRoseTarget
+      + Math.sin(dp) * 1.8 + Math.sin(dp * 2.3) * 0.7 + (Math.random() - 0.5) * 0.4;
+    const arrow = document.getElementById('windArrow');
+    if (arrow) arrow.setAttribute('transform', `rotate(${windRoseCurrent} 22 22)`);
+    windRoseAnimId = requestAnimationFrame(tick);
+  })();
 }
 
 function buildBftBar(bft) {
   const bar = document.getElementById('bftBar');
+  if (!bar) return;
   bar.innerHTML = '';
   for (let i = 0; i < 12; i++) {
     const seg = document.createElement('div');
-    seg.className = 'bft-seg';
-    if (i < bft) {
-      seg.classList.add(bft <= 4 ? 'on-green' : bft <= 7 ? 'on-orange' : 'on-red');
-    }
+    seg.className = 'bft-seg' + (i < bft ? ' ' + (bft <= 4 ? 'on-green' : bft <= 7 ? 'on-orange' : 'on-red') : '');
     bar.appendChild(seg);
   }
 }
@@ -1860,130 +1763,288 @@ async function fetchWeather() {
     const json = await r.json();
     const c    = json.current;
 
-    // Open-Meteo stuurt "2026-05-13T21:00" zonder timezone-suffix.
-    // new Date() parst dit inconsistent per browser — handmatig splitsen is betrouwbaarder.
-    const parseLocalW = s => {
-      const [date, time] = s.split('T');
-      const [y, mo, d]   = date.split('-').map(Number);
-      const [h, mi]      = time.split(':').map(Number);
-      return new Date(y, mo - 1, d, h, mi);
-    };
+    const windKn = Math.round(c.wind_speed_10m);
+    const gustKn = Math.round(c.wind_gusts_10m);
+    const dirDeg = Math.round(c.wind_direction_10m);
+    const bft    = bftFromKnots(windKn);
 
-    const windKn  = Math.round(c.windspeed_10m);
-    const gustKn  = Math.round(c.windgusts_10m);
-    const dirDeg  = Math.round(c.winddirection_10m);
-    const visKm   = (c.visibility / 1000).toFixed(1);
-    const bft     = bftFromKnots(windKn);
-    const dirText = degToCompass(dirDeg);
-    const isAlert = bft >= 6;
+    document.getElementById('dvWind').textContent    = windKn;
+    document.getElementById('dvGusts').textContent   = gustKn;
+    document.getElementById('dvDir').textContent     = dirDeg + '°';
+    document.getElementById('dvDirText').textContent = degToCompass(dirDeg);
+    document.getElementById('dvTemp').textContent    = c.temperature_2m.toFixed(1);
+    document.getElementById('dvVis').textContent     = (c.visibility / 1000).toFixed(1);
+    document.getElementById('dvPres').textContent    = Math.round(c.pressure_msl);
+    document.getElementById('dvHum').textContent     = Math.round(c.relative_humidity_2m);
+    document.getElementById('dvDew').textContent     = c.dew_point_2m != null ? c.dew_point_2m.toFixed(1) : '—';
 
-    document.getElementById('wvWind').textContent    = windKn;
-    document.getElementById('wvGusts').textContent   = gustKn;
-    document.getElementById('wvDir').textContent     = dirDeg + '°';
-    document.getElementById('wvDirText').textContent = dirText;
-    document.getElementById('wvVis').textContent     = visKm;
+    document.getElementById('dtGusts').classList.toggle('warn', gustKn >= 33);
+    document.getElementById('dtWind').classList.toggle('warn', bft >= 6);
 
-    // Windrose: stel doelrichting in en start de micro-animatie
     windRoseTarget = dirDeg;
     startWindRoseAnimation();
-
-    // Beaufort-balk
     buildBftBar(bft);
-
-    // Kleur rood bij waarschuwing
-    document.getElementById('wtWind').classList.toggle('alert', isAlert);
-
-    // Tijdstempel (parseLocal voorkomt Invalid Date)
-    const t = parseLocalW(c.time);
-    document.getElementById('weatherUpdated').textContent =
-      `Bijgewerkt: ${t.toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' })} — KNMI HARMONIE AROME`;
-
     document.getElementById('weatherLed').classList.add('rx');
+
+    const [dt, tm] = c.time.split('T');
+    const [y,mo,d] = dt.split('-').map(Number);
+    const [h,mi]   = tm.split(':').map(Number);
+    const t = new Date(y, mo-1, d, h, mi);
+    document.getElementById('weatherUpdated').textContent =
+      'Open-Meteo · Station Hoorn Terschelling · ' +
+      t.toLocaleTimeString('nl-NL', { hour:'2-digit', minute:'2-digit' });
+
   } catch(e) {
     console.error('fetchWeather:', e);
     document.getElementById('weatherUpdated').textContent = 'Weerdata tijdelijk niet beschikbaar';
   }
 }
 
-// ── Kustwacht / vaarwegberichten (RWS plain-text feed) ───────────────────────
+// ═══════════════════════════════════════════════════════════════════════════════
+// MARIFOONBERICHT KNMI — District Harlingen
+// Bron: waterberichtgeving.rws.nl/dynamisch/textpagina/kuwabericht.txt
+// ═══════════════════════════════════════════════════════════════════════════════
+
 const KUWA_URL = 'https://waterberichtgeving.rws.nl/dynamisch/textpagina/kuwabericht.txt';
 
-// Probeer achtereenvolgens: direct → proxy 1 → proxy 2
-async function fetchWithFallback(url) {
-  // 1. Direct (werkt als RWS CORS toestaat, wat ze voor .txt doen)
+async function fetchKuwa() {
   try {
-    const r = await fetch(url, { cache: 'no-cache' });
+    const r = await fetch(KUWA_URL, { cache: 'no-cache' });
     if (r.ok) return await r.text();
   } catch(_) {}
-
-  // 2. corsproxy.io
   try {
-    const r = await fetch('https://corsproxy.io/?' + encodeURIComponent(url), { cache: 'no-cache' });
-    if (r.ok) return await r.text();
-  } catch(_) {}
-
-  // 3. allorigins als laatste redmiddel (retourneert JSON met .contents)
-  try {
-    const r    = await fetch('https://api.allorigins.win/get?url=' + encodeURIComponent(url), { cache: 'no-cache' });
+    const r    = await fetch('https://api.allorigins.win/get?url=' + encodeURIComponent(KUWA_URL));
     const json = await r.json();
     if (json.contents) return json.contents;
   } catch(_) {}
-
-  throw new Error('Alle proxies gefaald');
+  throw new Error('KUWA niet bereikbaar');
 }
 
-function extractHarlingenSection(text) {
-  // Probeer eerst de exacte district-header te vinden
-  const candidates = ['DISTRICT HARLINGEN', 'KUSTDISTRICT HARLINGEN', 'HARLINGEN'];
-  for (const key of candidates) {
-    const start = text.indexOf(key);
-    if (start !== -1) {
-      const end = text.indexOf('~~~~', start + key.length);
-      return end !== -1
-        ? text.slice(start, end).trim()
-        : text.slice(start, start + 900).trim();
+function parseKuwa(text) {
+  // Aanmaaktijdstip
+  const timeMatch = text.match(/Aanmaak tijdstip:\s*(.+?)(?:\n|$)/);
+  const aanmaak   = timeMatch ? timeMatch[1].trim() : '—';
+
+  // Harlingen-waarschuwing uit de tabel bovenaan
+  const warnMatch = text.match(/Harlingen\s{1,6}([A-Z0-9 ]+?)(?:\s{2,}|\n)/);
+  const warning   = warnMatch ? warnMatch[1].trim() : 'GEEN';
+
+  // Kustdistrict ROTTUM (dichtste bij Terschelling), fallback TEXEL
+  let body = '';
+  const rottumIdx = text.indexOf('KUSTDISTRICT ROTTUM');
+  if (rottumIdx !== -1) {
+    const endIdx = text.indexOf('~~~~', rottumIdx + 10);
+    body = endIdx !== -1 ? text.slice(rottumIdx, endIdx).trim() : text.slice(rottumIdx, rottumIdx + 1200).trim();
+  } else {
+    const texelIdx = text.indexOf('KUSTDISTRICT TEXEL');
+    if (texelIdx !== -1) {
+      const endIdx = text.indexOf('~~~~', texelIdx + 10);
+      body = endIdx !== -1 ? text.slice(texelIdx, endIdx).trim() : text.slice(texelIdx, texelIdx + 1200).trim();
     }
   }
-  // Fallback: geef de eerste ~1400 tekens terug als het district niet gevonden wordt
-  return text.slice(0, 1400);
+  return { aanmaak, warning, body };
 }
 
-function highlightText(text) {
-  return text
-    .replace(/(WAARSCHUWING|WIND BFT|STORM|WINDSTOTEN|GEEN)/g,
-      '<span class="bericht-highlight">$1</span>');
-}
+function renderMarifoon({ aanmaak, warning, body }) {
+  const warnEl = document.getElementById('marifoonWarning');
+  const bodyEl = document.getElementById('marifoonBody');
+  const timeEl = document.getElementById('marifoonTime');
 
-function buildTicker(text) {
-  const lines = text.split('\n')
-    .map(l => l.trim())
-    .filter(l => l.length > 8 && !l.startsWith('...') && !l.startsWith('|'));
-  const summary = lines.slice(0, 8).join('  ·  ');
-  const ticker  = document.getElementById('tickerInner');
-  ticker.innerHTML = '      ' + summary + '      ';
-  const dur = Math.max(35, Math.round(summary.length * 0.22));
-  ticker.style.animationDuration = dur + 's';
-}
+  if (timeEl) timeEl.textContent = aanmaak;
 
-async function fetchVaarwegberichten() {
-  const ticker = document.getElementById('tickerInner');
-  try {
-    const text      = await fetchWithFallback(KUWA_URL);
-    const harlingen = extractHarlingenSection(text);
-    buildTicker(harlingen);
-  } catch(e) {
-    if (ticker) ticker.textContent = 'Vaarwegberichten tijdelijk niet beschikbaar — raadpleeg waterberichtgeving.rws.nl';
+  const isAlert = warning !== 'GEEN' && warning.trim() !== '';
+  if (warnEl) {
+    warnEl.textContent = isAlert ? '⚠ WAARSCHUWING: ' + warning : '✓ GEEN WAARSCHUWING';
+    warnEl.className   = 'marifoon-warning ' + (isAlert ? 'actief' : 'geen');
+  }
+  if (bodyEl && body) {
+    const clean = body
+      .replace(/^\.{10,}.*$/gm, '')
+      .replace(/^\s*\|\s*$/gm, '')
+      .replace(/\n{3,}/g, '\n\n')
+      .trim();
+    bodyEl.innerHTML = clean
+      .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+      .replace(/(WAARSCHUWING|STORM|WINDSTOTEN|BFT\s*\d+|GEEN|SLECHT ZICHT)/g,
+               '<span class="hl">$1</span>');
   }
 }
 
-// Start beide feeds na boot
+async function fetchMarifoon() {
+  try {
+    const text = await fetchKuwa();
+    renderMarifoon(parseKuwa(text));
+  } catch(e) {
+    console.error('fetchMarifoon:', e);
+    const warnEl = document.getElementById('marifoonWarning');
+    if (warnEl) { warnEl.textContent = 'Bericht tijdelijk niet beschikbaar'; warnEl.className = 'marifoon-warning geen'; }
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// GETIJDEN — RWS Waterwebservices (ddapi20) · terschelling.west
+// ═══════════════════════════════════════════════════════════════════════════════
+
+const RWS_BASE    = 'https://ddapi20-waterwebservices.rijkswaterstaat.nl';
+const RWS_LAATSTE = RWS_BASE + '/ONLINEWAARNEMINGENSERVICES/OphalenLaatsteWaarnemingen';
+const RWS_PERIODE = RWS_BASE + '/ONLINEWAARNEMINGENSERVICES/OphalenWaarnemingen';
+const RWS_LOCATIE = 'terschelling.west';
+
+async function rwsPost(url, body) {
+  const r = await fetch(url, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body) });
+  return r.json();
+}
+
+async function fetchWaterstand() {
+  const json = await rwsPost(RWS_LAATSTE, {
+    AquoPlusWaarnemingMetadataLijst: [{ AquoMetadata: { Compartiment:{Code:'OW'}, Grootheid:{Code:'WATHTE'} } }],
+    LocatieLijst: [{ Code: RWS_LOCATIE }]
+  });
+  if (!json?.Succesvol) return null;
+  const list = (json.WaarnemingenLijst ?? [])
+    .filter(w => w.AquoMetadata?.ProcesType === 'meting')
+    .flatMap(w => w.MetingenLijst ?? [])
+    .filter(m => m?.Meetwaarde?.Waarde_Numeriek != null)
+    .sort((a, b) => new Date(b.Tijdstip) - new Date(a.Tijdstip));
+  if (!list.length) return null;
+  return { peil: Math.round(list[0].Meetwaarde.Waarde_Numeriek), tijd: new Date(list[0].Tijdstip) };
+}
+
+async function fetchGetijtafel() {
+  const now   = new Date();
+  const begin = new Date(now); begin.setUTCHours(0,0,0,0);
+  const eind  = new Date(begin); eind.setUTCDate(eind.getUTCDate() + 3);
+  const fmt   = d => d.toISOString().replace(/\.\d{3}Z$/, '.000+00:00');
+
+  const json = await rwsPost(RWS_PERIODE, {
+    AquoPlusWaarnemingMetadata: {
+      AquoMetadata: { Compartiment:{Code:'OW'}, Grootheid:{Code:'WATHTE'}, Groepering:{Code:'GETETBRKD2'} }
+    },
+    Locatie: { Code: RWS_LOCATIE },
+    Periode: { Begindatumtijd: fmt(begin), Einddatumtijd: fmt(eind) }
+  });
+  if (!json?.Succesvol) return [];
+  return (json.WaarnemingenLijst?.[0]?.MetingenLijst ?? [])
+    .filter(m => m?.Meetwaarde?.Waarde_Numeriek != null)
+    .map(m => ({ t: new Date(m.Tijdstip), val: Math.round(m.Meetwaarde.Waarde_Numeriek),
+                 type: m.Meetwaarde.Waarde_Numeriek >= 0 ? 'hoog' : 'laag' }))
+    .filter(e => !isNaN(e.t))
+    .sort((a,b) => a.t - b.t);
+}
+
+function drawTijGraph(rows, stand) {
+  const canvas = document.getElementById('tijGraph');
+  if (!canvas || !rows.length) return;
+  canvas.width  = canvas.offsetWidth  || canvas.parentElement?.offsetWidth || 400;
+  canvas.height = 70;
+  const W = canvas.width, H = canvas.height;
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0,0,W,H);
+
+  const tMin = rows[0].t.getTime(), tMax = rows[rows.length-1].t.getTime();
+  const vals = rows.map(r=>r.val);
+  const vMin = Math.min(...vals)-15, vMax = Math.max(...vals)+15;
+  const xOf  = t => ((t-tMin)/(tMax-tMin))*W;
+  const yOf  = v => H - ((v-vMin)/(vMax-vMin))*H;
+
+  const grad = ctx.createLinearGradient(0,0,0,H);
+  grad.addColorStop(0,'rgba(232,160,32,0.2)');
+  grad.addColorStop(1,'rgba(232,160,32,0.02)');
+
+  ctx.beginPath();
+  ctx.moveTo(0, yOf(0));
+  rows.forEach((r,i) => {
+    if (i===0) { ctx.lineTo(xOf(r.t),yOf(r.val)); return; }
+    const p = rows[i-1], cx = (xOf(p.t)+xOf(r.t))/2;
+    ctx.bezierCurveTo(cx,yOf(p.val),cx,yOf(r.val),xOf(r.t),yOf(r.val));
+  });
+  ctx.lineTo(W, yOf(0));
+  ctx.closePath();
+  ctx.fillStyle = grad; ctx.fill();
+
+  ctx.beginPath();
+  rows.forEach((r,i) => {
+    if (i===0) { ctx.moveTo(xOf(r.t),yOf(r.val)); return; }
+    const p = rows[i-1], cx = (xOf(p.t)+xOf(r.t))/2;
+    ctx.bezierCurveTo(cx,yOf(p.val),cx,yOf(r.val),xOf(r.t),yOf(r.val));
+  });
+  ctx.strokeStyle = 'rgba(232,160,32,0.8)'; ctx.lineWidth = 1.5; ctx.stroke();
+
+  if (stand) {
+    const nx = xOf(stand.tijd.getTime());
+    if (nx > 0 && nx < W) {
+      ctx.beginPath(); ctx.moveTo(nx,0); ctx.lineTo(nx,H);
+      ctx.strokeStyle = 'rgba(39,174,96,0.55)'; ctx.lineWidth = 1;
+      ctx.setLineDash([3,3]); ctx.stroke(); ctx.setLineDash([]);
+    }
+  }
+}
+
+function renderGetijden(rows, stand) {
+  const nowMs   = Date.now();
+  const nextIdx = rows.findIndex(r => r.t.getTime() > nowMs);
+
+  if (nextIdx >= 0) {
+    const nxt = rows[nextIdx];
+    document.getElementById('tijNextLabel').textContent  = nxt.type === 'hoog' ? '▲ Volgend hoogwater' : '▽ Volgend laagwater';
+    document.getElementById('tijNextValue').textContent  = nxt.t.toLocaleTimeString('nl-NL',{hour:'2-digit',minute:'2-digit'});
+    document.getElementById('tijNextUnit').textContent   = nxt.t.toLocaleDateString('nl-NL',{weekday:'short',day:'numeric',month:'short'});
+    const tile = document.getElementById('dtNextTide');
+    tile.className = 'dtile' + (nxt.type === 'laag' ? ' low' : '');
+  }
+
+  const tbody = document.getElementById('tijBody');
+  tbody.innerHTML = rows.map((r,i) => {
+    const dag  = r.t.toLocaleDateString('nl-NL',{weekday:'short',day:'numeric',month:'short'});
+    const tijd = r.t.toLocaleTimeString('nl-NL',{hour:'2-digit',minute:'2-digit'});
+    const badge= `<span class="tij-badge ${r.type}">${r.type==='hoog' ? '▲ HW' : '▽ LW'}</span>`;
+    const nap  = (r.val>=0?'+':'')+r.val;
+    const cls  = [r.type, i===nextIdx?'next':''].filter(Boolean).join(' ');
+    return `<tr class="${cls}"><td>${dag}</td><td>${tijd}</td><td>${badge}</td><td>${nap} cm</td></tr>`;
+  }).join('') || '<tr><td colspan="4" style="text-align:center;color:var(--text-dim);padding:16px;">Geen getijdata</td></tr>';
+
+  drawTijGraph(rows, stand);
+}
+
+async function fetchGetijden() {
+  try {
+    const [standRes, tafelRes] = await Promise.allSettled([fetchWaterstand(), fetchGetijtafel()]);
+    const stand = standRes.status==='fulfilled' ? standRes.value : null;
+    const rows  = (tafelRes.status==='fulfilled' && tafelRes.value?.length) ? tafelRes.value : [];
+
+    const peilEl = document.getElementById('tijWaterstand');
+    const tijdEl = document.getElementById('tijMeettijd');
+    const wsEl   = document.getElementById('dtWaterstand');
+    if (stand) {
+      peilEl.textContent = (stand.peil>=0?'+':'')+stand.peil;
+      tijdEl.textContent = stand.tijd.toLocaleTimeString('nl-NL',{hour:'2-digit',minute:'2-digit',timeZone:'Europe/Amsterdam'});
+      wsEl.className = 'dtile' + (stand.peil < -40 ? ' low' : '');
+    } else {
+      peilEl.textContent = '—'; tijdEl.textContent = '—';
+    }
+
+    renderGetijden(rows, stand);
+    document.getElementById('tijLed').classList.add('rx');
+    document.getElementById('tijUpdated').textContent =
+      'Rijkswaterstaat Waterwebservices · ' +
+      new Date().toLocaleTimeString('nl-NL',{hour:'2-digit',minute:'2-digit'});
+
+  } catch(e) {
+    console.error('fetchGetijden:', e);
+    document.getElementById('tijUpdated').textContent = 'Getijdata tijdelijk niet beschikbaar';
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// DATA-FEEDS starten
+// ═══════════════════════════════════════════════════════════════════════════════
 function startDataFeeds() {
   fetchWeather();
-  fetchVaarwegberichten();
+  fetchMarifoon();
   fetchGetijden();
-  setInterval(fetchWeather,          10 * 60 * 1000);
-  setInterval(fetchVaarwegberichten, 60 * 60 * 1000);
-  setInterval(fetchGetijden,         30 * 60 * 1000);
+  setInterval(fetchWeather,   10 * 60 * 1000);
+  setInterval(fetchMarifoon,  60 * 60 * 1000);
+  setInterval(fetchGetijden,  30 * 60 * 1000);
 }
 
 </script>
