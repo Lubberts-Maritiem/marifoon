@@ -1885,51 +1885,54 @@ async function fetchMarifoon() {
 // GETIJDEN — RWS Waterwebservices (ddapi20) · terschelling.west
 // ═══════════════════════════════════════════════════════════════════════════════
 
-const RWS_BASE    = 'https://ddapi20-waterwebservices.rijkswaterstaat.nl';
-const RWS_LAATSTE = RWS_BASE + '/ONLINEWAARNEMINGENSERVICES/OphalenLaatsteWaarnemingen';
-const RWS_PERIODE = RWS_BASE + '/ONLINEWAARNEMINGENSERVICES/OphalenWaarnemingen';
-const RWS_LOCATIE = 'terschelling.west';
+// Open-Meteo Marine — CORS open (access-control-allow-origin: *)
+// Coördinaten: West-Terschelling (53.363 N, 5.220 E)
+// sea_level_height_msl = zeewaterhoogte t.o.v. MSL (~NAP), in meter
+const MARINE_URL =
+  'https://marine-api.open-meteo.com/v1/marine' +
+  '?latitude=53.363&longitude=5.220' +
+  '&current=sea_level_height_msl' +
+  '&hourly=sea_level_height_msl' +
+  '&forecast_days=3' +
+  '&timezone=Europe%2FAmsterdam';
 
-async function rwsPost(url, body) {
-  const r = await fetch(url, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body) });
-  return r.json();
-}
+// Parse "2026-05-20T14:00" veilig als lokale tijd (geen Z → browser-inconsistent)
+const parseLocalT = s => {
+  const [d, t] = s.split('T');
+  const [y,mo,dy] = d.split('-').map(Number);
+  const [h,mi]    = t.split(':').map(Number);
+  return new Date(y, mo-1, dy, h, mi);
+};
 
 async function fetchWaterstand() {
-  const json = await rwsPost(RWS_LAATSTE, {
-    AquoPlusWaarnemingMetadataLijst: [{ AquoMetadata: { Compartiment:{Code:'OW'}, Grootheid:{Code:'WATHTE'} } }],
-    LocatieLijst: [{ Code: RWS_LOCATIE }]
-  });
-  if (!json?.Succesvol) return null;
-  const list = (json.WaarnemingenLijst ?? [])
-    .filter(w => w.AquoMetadata?.ProcesType === 'meting')
-    .flatMap(w => w.MetingenLijst ?? [])
-    .filter(m => m?.Meetwaarde?.Waarde_Numeriek != null)
-    .sort((a, b) => new Date(b.Tijdstip) - new Date(a.Tijdstip));
-  if (!list.length) return null;
-  return { peil: Math.round(list[0].Meetwaarde.Waarde_Numeriek), tijd: new Date(list[0].Tijdstip) };
+  const r    = await fetch(MARINE_URL);
+  const json = await r.json();
+  const lvl  = json?.current?.sea_level_height_msl;
+  const tim  = json?.current?.time;
+  if (lvl == null) return null;
+  return { peil: Math.round(lvl * 100), tijd: parseLocalT(tim) };
 }
 
 async function fetchGetijtafel() {
-  const now   = new Date();
-  const begin = new Date(now); begin.setUTCHours(0,0,0,0);
-  const eind  = new Date(begin); eind.setUTCDate(eind.getUTCDate() + 3);
-  const fmt   = d => d.toISOString().replace(/\.\d{3}Z$/, '.000+00:00');
+  const r      = await fetch(MARINE_URL);
+  const json   = await r.json();
+  const times  = json?.hourly?.time  ?? [];
+  const levels = json?.hourly?.sea_level_height_msl ?? [];
 
-  const json = await rwsPost(RWS_PERIODE, {
-    AquoPlusWaarnemingMetadata: {
-      AquoMetadata: { Compartiment:{Code:'OW'}, Grootheid:{Code:'WATHTE'}, Groepering:{Code:'GETETBRKD2'} }
-    },
-    Locatie: { Code: RWS_LOCATIE },
-    Periode: { Begindatumtijd: fmt(begin), Einddatumtijd: fmt(eind) }
-  });
-  if (!json?.Succesvol) return [];
-  return (json.WaarnemingenLijst?.[0]?.MetingenLijst ?? [])
-    .filter(m => m?.Meetwaarde?.Waarde_Numeriek != null)
-    .map(m => ({ t: new Date(m.Tijdstip), val: Math.round(m.Meetwaarde.Waarde_Numeriek),
-                 type: m.Meetwaarde.Waarde_Numeriek >= 0 ? 'hoog' : 'laag' }))
-    .filter(e => !isNaN(e.t))
-    .sort((a,b) => a.t - b.t);
+  // Zoek lokale extremen via drie-punts vergelijking
+  const rows = [];
+  for (let i = 1; i < levels.length - 1; i++) {
+    const p = levels[i-1], c = levels[i], n = levels[i+1];
+    if (p == null || c == null || n == null) continue;
+    if (c > p && c > n) rows.push({ t: parseLocalT(times[i]), val: Math.round(c * 100), type: 'hoog' });
+    else if (c < p && c < n) rows.push({ t: parseLocalT(times[i]), val: Math.round(c * 100), type: 'laag' });
+  }
+
+  // Alleen vandaag t/m overmorgen
+  const now      = new Date();
+  const dayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const dayEnd   = new Date(dayStart); dayEnd.setDate(dayEnd.getDate() + 3);
+  return rows.filter(r => r.t >= dayStart && r.t <= dayEnd);
 }
 
 function drawTijGraph(rows, stand) {
