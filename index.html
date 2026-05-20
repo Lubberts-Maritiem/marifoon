@@ -1016,7 +1016,7 @@
   </div>
 
   <!-- Kustwacht bericht ticker -->
-  <div class="ticker-label">Kustwacht Bericht — Kustdistrict Texel</div>
+  <div class="ticker-label">Kustwacht Bericht — District Harlingen</div>
   <div class="ticker-wrap" id="tickerWrap">
     <div class="ticker-inner" id="tickerInner">Bericht laden…</div>
   </div>
@@ -1587,70 +1587,174 @@ function startScan() {
   }, 750);
 }
 
-// ── Getijden West-Terschelling (Open-Meteo Marine API) ───────────────────────
-// Gratis, geen API key, geeft per uur sea_level_height_msl (m tov MSL, ~NAP)
-// We berekenen hoog/laag extremen door lokale minima/maxima te zoeken in de curve.
-const MARINE_URL =
-  'https://marine-api.open-meteo.com/v1/marine' +
-  '?latitude=53.37&longitude=5.22' +
-  '&current=sea_level_height_msl,wave_height' +
-  '&hourly=sea_level_height_msl' +
-  '&forecast_days=3' +
-  '&timezone=Europe%2FAmsterdam';
+// ── Getijden West-Terschelling (Rijkswaterstaat Waterwebservices) ────────────
+// Gebruikt de officiële RWS DDL Waterwebservices (live sinds dec 2025).
+// Domein: ddapi20-waterwebservices.rijkswaterstaat.nl
+// Station: terschelling.west (waterstand NAP in cm + getij-extremen via GETETBRKD2)
+// Gratis, geen API key vereist.
+
+// Nieuw RWS domein (live seit december 2025; oud waterwebservices.rijkswaterstaat.nl geeft 301)
+const RWS_BASE     = 'https://ddapi20-waterwebservices.rijkswaterstaat.nl';
+const RWS_LAATSTE  = RWS_BASE + '/ONLINEWAARNEMINGENSERVICES/OphalenLaatsteWaarnemingen';
+const RWS_PERIODE  = RWS_BASE + '/ONLINEWAARNEMINGENSERVICES/OphalenWaarnemingen';
+
+// Locatiecode uit de RWS-catalogus (WATHTE + OW → terschelling.west)
+const RWS_LOCATIE  = 'terschelling.west';
+
+async function fetchRWSWaterstand() {
+  const body = {
+    "AquoPlusWaarnemingMetadataLijst": [{
+      "AquoMetadata": {
+        "Compartiment": { "Code": "OW" },
+        "Grootheid":    { "Code": "WATHTE" }
+      }
+    }],
+    "LocatieLijst": [{ "Code": RWS_LOCATIE }]
+  };
+
+  const r    = await fetch(RWS_LAATSTE, {
+    method:  'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body:    JSON.stringify(body)
+  });
+  const json = await r.json();
+  if (!json?.Succesvol) return null;
+
+  // Kies de meting met het meest recente tijdstip (ProcesType "meting")
+  const candidates = (json.WaarnemingenLijst ?? [])
+    .filter(w => w.AquoMetadata?.ProcesType === 'meting')
+    .flatMap(w => w.MetingenLijst ?? [])
+    .filter(m => m?.Meetwaarde?.Waarde_Numeriek != null);
+
+  if (!candidates.length) return null;
+  candidates.sort((a, b) => new Date(b.Tijdstip) - new Date(a.Tijdstip));
+  const best = candidates[0];
+
+  return {
+    peil: Math.round(best.Meetwaarde.Waarde_Numeriek),
+    tijd: new Date(best.Tijdstip)
+  };
+}
+
+async function fetchRWSGetijtafel() {
+  const now   = new Date();
+  const begin = new Date(now); begin.setUTCHours(0,0,0,0);
+  const eind  = new Date(begin); eind.setUTCDate(eind.getUTCDate() + 3);
+  const fmt   = d => d.toISOString().replace(/\.\d{3}Z$/, '.000+00:00');
+
+  const body = {
+    "AquoPlusWaarnemingMetadata": {
+      "AquoMetadata": {
+        "Compartiment": { "Code": "OW" },
+        "Grootheid":    { "Code": "WATHTE" },
+        "Groepering":   { "Code": "GETETBRKD2" }
+      }
+    },
+    "Locatie": { "Code": RWS_LOCATIE },
+    "Periode": { "Begindatumtijd": fmt(begin), "Einddatumtijd": fmt(eind) }
+  };
+
+  const r    = await fetch(RWS_PERIODE, {
+    method:  'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body:    JSON.stringify(body)
+  });
+  const json = await r.json();
+  if (!json?.Succesvol) return [];
+
+  const metingen = json?.WaarnemingenLijst?.[0]?.MetingenLijst ?? [];
+  return metingen
+    .filter(m => m?.Meetwaarde?.Waarde_Numeriek != null)
+    .map(m => ({
+      t:    new Date(m.Tijdstip),
+      val:  Math.round(m.Meetwaarde.Waarde_Numeriek),
+      // GETETBRKD2 geeft afwisselend HW (+) en LW (−); teken bepaalt type
+      type: m.Meetwaarde.Waarde_Numeriek >= 0 ? 'hoog' : 'laag'
+    }))
+    .filter(e => !isNaN(e.t.getTime()))
+    .sort((a, b) => a.t - b.t);
+}
 
 async function fetchGetijden() {
   try {
-    const r    = await fetch(MARINE_URL);
-    const json = await r.json();
+    // Haal actuele waterstand en getij-extremen parallel op
+    const [standData, extremen] = await Promise.allSettled([
+      fetchRWSWaterstand(),
+      fetchRWSGetijtafel()
+    ]);
 
-    const times  = json.hourly.time;
-    const levels = json.hourly.sea_level_height_msl;
-    const curLvl = json.current.sea_level_height_msl;
-    const curTime= json.current.time;
-
-    // Huidig peil in cm
-    const curCm = Math.round(curLvl * 100);
-    document.getElementById('tijWaterstand').textContent = curCm >= 0 ? '+' + curCm : String(curCm);
-
-    // Tijd correct parsen: Open-Meteo geeft "2026-05-13T20:45" zonder Z → lokale tijd
-    const parseLocal = s => {
-      const [date, time] = s.split('T');
-      const [y,mo,d]     = date.split('-').map(Number);
-      const [h,mi]       = time.split(':').map(Number);
-      return new Date(y, mo-1, d, h, mi);
-    };
-
-    const curDt = parseLocal(curTime);
-    document.getElementById('tijMeettijd').textContent =
-      curDt.toLocaleTimeString('nl-NL', { hour:'2-digit', minute:'2-digit' });
-
-    // Zoek lokale extremen
-    const extremes = [];
-    for (let i = 1; i < levels.length - 1; i++) {
-      const p = levels[i-1], c = levels[i], n = levels[i+1];
-      if (c === null || p === null || n === null) continue;
-      if (c > p && c > n)
-        extremes.push({ t: parseLocal(times[i]), val: Math.round(c * 100), type: 'hoog' });
-      else if (c < p && c < n)
-        extremes.push({ t: parseLocal(times[i]), val: Math.round(c * 100), type: 'laag' });
+    // ── Actuele waterstand ────────────────────────────────────────────────────
+    if (standData.status === 'fulfilled' && standData.value) {
+      const { peil, tijd } = standData.value;
+      document.getElementById('tijWaterstand').textContent =
+        peil >= 0 ? '+' + peil : String(peil);
+      document.getElementById('tijMeettijd').textContent =
+        tijd.toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Amsterdam' });
+    } else {
+      document.getElementById('tijWaterstand').textContent = '—';
+      document.getElementById('tijMeettijd').textContent   = '—';
     }
 
-    // Vandaag t/m overmorgen, inclusief al gepasseerde extremen van vandaag
-    const now      = new Date();
-    const dayStart = new Date(now); dayStart.setHours(0,0,0,0);
-    const limit    = new Date(dayStart); limit.setDate(limit.getDate() + 3);
-    const rows     = extremes.filter(e => e.t >= dayStart && e.t <= limit);
+    // ── Getijdentafel ─────────────────────────────────────────────────────────
+    let rows = [];
+    if (extremen.status === 'fulfilled' && extremen.value?.length > 0) {
+      rows = extremen.value;
+    } else {
+      // Fallback: bereken extremen uit Open-Meteo als RWS niet reageert
+      rows = await fetchGetijdenFallback();
+    }
 
     renderGetijden(rows);
     document.getElementById('tijLed').classList.add('rx');
+
+    const bron = (extremen.status === 'fulfilled' && extremen.value?.length > 0)
+      ? 'Rijkswaterstaat Waterinfo'
+      : 'Open-Meteo (fallback)';
     document.getElementById('tijUpdated').textContent =
-      'Bron: Open-Meteo Marine · ' +
-      new Date().toLocaleTimeString('nl-NL', { hour:'2-digit', minute:'2-digit' });
+      'Bron: ' + bron + ' · ' +
+      new Date().toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' });
 
   } catch(e) {
     document.getElementById('tijUpdated').textContent = 'Getijdata tijdelijk niet beschikbaar';
     console.error('fetchGetijden:', e);
   }
+}
+
+// ── Fallback: Open-Meteo Marine (als RWS onbereikbaar is) ────────────────────
+const MARINE_URL =
+  'https://marine-api.open-meteo.com/v1/marine' +
+  '?latitude=53.37&longitude=5.22' +
+  '&hourly=sea_level_height_msl' +
+  '&forecast_days=3' +
+  '&timezone=Europe%2FAmsterdam';
+
+async function fetchGetijdenFallback() {
+  const r    = await fetch(MARINE_URL);
+  const json = await r.json();
+  const times  = json.hourly.time;
+  const levels = json.hourly.sea_level_height_msl;
+
+  const parseLocal = s => {
+    const [date, time] = s.split('T');
+    const [y,mo,d]     = date.split('-').map(Number);
+    const [h,mi]       = time.split(':').map(Number);
+    return new Date(y, mo-1, d, h, mi);
+  };
+
+  const extremes = [];
+  for (let i = 1; i < levels.length - 1; i++) {
+    const p = levels[i-1], c = levels[i], n = levels[i+1];
+    if (c === null || p === null || n === null) continue;
+    if (c > p && c > n)
+      extremes.push({ t: parseLocal(times[i]), val: Math.round(c * 100), type: 'hoog' });
+    else if (c < p && c < n)
+      extremes.push({ t: parseLocal(times[i]), val: Math.round(c * 100), type: 'laag' });
+  }
+
+  const now      = new Date();
+  const dayStart = new Date(now); dayStart.setHours(0,0,0,0);
+  const limit    = new Date(dayStart); limit.setDate(limit.getDate() + 3);
+  return extremes.filter(e => e.t >= dayStart && e.t <= limit);
 }
 
 function renderGetijden(rows) {
@@ -1828,11 +1932,20 @@ async function fetchWithFallback(url) {
   throw new Error('Alle proxies gefaald');
 }
 
-function extractTexelSection(text) {
-  const start = text.indexOf('KUSTDISTRICT TEXEL');
-  if (start === -1) return text.slice(0, 1400);
-  const end = text.indexOf('~~~~', start + 10);
-  return end !== -1 ? text.slice(start, end).trim() : text.slice(start, start + 900).trim();
+function extractHarlingenSection(text) {
+  // Probeer eerst de exacte district-header te vinden
+  const candidates = ['DISTRICT HARLINGEN', 'KUSTDISTRICT HARLINGEN', 'HARLINGEN'];
+  for (const key of candidates) {
+    const start = text.indexOf(key);
+    if (start !== -1) {
+      const end = text.indexOf('~~~~', start + key.length);
+      return end !== -1
+        ? text.slice(start, end).trim()
+        : text.slice(start, start + 900).trim();
+    }
+  }
+  // Fallback: geef de eerste ~1400 tekens terug als het district niet gevonden wordt
+  return text.slice(0, 1400);
 }
 
 function highlightText(text) {
@@ -1853,16 +1966,13 @@ function buildTicker(text) {
 }
 
 async function fetchVaarwegberichten() {
-  const scroll = document.getElementById('berichtScroll');
   const ticker = document.getElementById('tickerInner');
   try {
-    const text  = await fetchWithFallback(KUWA_URL);
-    const texel = extractTexelSection(text);
-    scroll.innerHTML = highlightText(texel);
-    buildTicker(texel);
+    const text      = await fetchWithFallback(KUWA_URL);
+    const harlingen = extractHarlingenSection(text);
+    buildTicker(harlingen);
   } catch(e) {
-    scroll.textContent = 'Berichten tijdelijk niet beschikbaar.\nRaadpleeg: waterberichtgeving.rws.nl';
-    ticker.textContent = 'Vaarwegberichten tijdelijk niet beschikbaar — raadpleeg waterberichtgeving.rws.nl';
+    if (ticker) ticker.textContent = 'Vaarwegberichten tijdelijk niet beschikbaar — raadpleeg waterberichtgeving.rws.nl';
   }
 }
 
