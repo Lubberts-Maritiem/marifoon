@@ -1,0 +1,2039 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lubberts Maritiem — Terschelling VHF &amp; Camera</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Barlow+Condensed:wght@300;400;600&family=Cinzel:wght@400;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:       #0d0f12;
+    --panel:    #141820;
+    --rim:      #1e2430;
+    --steel:    #262e3c;
+    --accent:   #e8a020;
+    --accent2:  #c8781a;
+    --red:      #c0392b;
+    --green:    #27ae60;
+    --text:     #b0bec5;
+    --text-dim: #546e7a;
+    --led-off:  #1a1f28;
+    --led-pwr:  #e8a020;
+    --led-rx:   #27ae60;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Barlow Condensed', sans-serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 20px;
+    user-select: none;
+  }
+
+  /* ── Header ── */
+  header {
+    width: 100%;
+    max-width: 1200px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+    padding: 0 4px;
+  }
+
+  .brand {
+    font-family: 'Cinzel', serif;
+    font-size: 13px;
+    letter-spacing: 3px;
+    color: var(--accent);
+    text-transform: uppercase;
+  }
+
+  .utc-clock {
+    font-family: 'Orbitron', monospace;
+    font-size: 14px;
+    color: var(--text-dim);
+    letter-spacing: 2px;
+  }
+
+  /* ── Shared panel shell ── */
+  .panel {
+    width: 100%;
+    max-width: 1200px;
+    background: var(--panel);
+    border: 1px solid var(--rim);
+    border-radius: 12px;
+    box-shadow:
+      0 0 0 1px #0a0c10,
+      0 8px 40px rgba(0,0,0,0.6),
+      inset 0 1px 0 rgba(255,255,255,0.04);
+    padding: 24px;
+    margin-bottom: 20px;
+  }
+
+  /* ── Display row (channel number + scanner) ── */
+  .display-block {
+    background: #080b0e;
+    border: 1px solid #0f1318;
+    border-radius: 8px;
+    padding: 18px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    box-shadow: inset 0 2px 8px rgba(0,0,0,0.5);
+    margin-bottom: 16px;
+  }
+
+  /* Channel number left */
+  .ch-left { display: flex; flex-direction: column; }
+
+  .channel-label-small {
+    font-size: 10px;
+    letter-spacing: 4px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    margin-bottom: 4px;
+  }
+
+  .channel-number {
+    font-family: 'Orbitron', monospace;
+    font-size: 72px;
+    font-weight: 900;
+    line-height: 1;
+    color: var(--accent);
+    text-shadow: 0 0 20px var(--accent), 0 0 60px rgba(232,160,32,0.25);
+    letter-spacing: -2px;
+  }
+
+  .channel-name {
+    font-size: 13px;
+    letter-spacing: 2px;
+    color: var(--text-dim);
+    margin-top: 6px;
+    text-transform: uppercase;
+  }
+
+  .led-row {
+    display: flex;
+    gap: 12px;
+    margin-top: 10px;
+  }
+
+  .led-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 10px;
+    letter-spacing: 2px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+  }
+
+  .led {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--led-off);
+    transition: background 0.15s, box-shadow 0.15s;
+  }
+  .led.pwr { background: var(--led-pwr); box-shadow: 0 0 6px var(--led-pwr); }
+  .led.rx  { background: var(--led-rx);  box-shadow: 0 0 6px var(--led-rx); }
+
+
+  /* ── Waveform ── */
+  .waveform-block {
+    background: #060809;
+    border-radius: 6px;
+    border: 1px solid #0f1318;
+    overflow: hidden;
+    height: 56px;
+    margin-bottom: 16px;
+  }
+
+  canvas#waveform { display: block; width: 100%; height: 56px; }
+
+  /* ── Section divider ── */
+  .divider {
+    height: 1px;
+    background: linear-gradient(to right, transparent, var(--rim), transparent);
+    margin-bottom: 16px;
+  }
+
+  /* ── Controls row (scan status + smeter + volume) ── */
+  .controls-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .rx-status {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .rx-indicator {
+    font-family: 'Orbitron', monospace;
+    font-size: 10px;
+    letter-spacing: 3px;
+    color: var(--accent);
+    text-transform: uppercase;
+  }
+
+  .rx-subtitle {
+    font-size: 10px;
+    letter-spacing: 2px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+  }
+
+  /* ── Scan display (rechts in display-block) ── */
+  .scan-display {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0;
+  }
+
+  .scan-display-label {
+    font-size: 10px;
+    letter-spacing: 4px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    margin-bottom: 8px;
+    text-align: right;
+  }
+
+  /* Het venster dat de kanaallijst toont — 5 kanalen zichtbaar */
+  .scan-window {
+    position: relative;
+    width: 220px;
+    height: 130px;
+    overflow: hidden;
+    background: #050709;
+    border: 1px solid #0f1318;
+    border-radius: 6px;
+    box-shadow: inset 0 2px 8px rgba(0,0,0,0.6);
+  }
+
+  /* Vervaag boven- en onderkant */
+  .scan-window::before,
+  .scan-window::after {
+    content: '';
+    position: absolute;
+    left: 0; right: 0;
+    height: 32px;
+    z-index: 2;
+    pointer-events: none;
+  }
+  .scan-window::before {
+    top: 0;
+    background: linear-gradient(to bottom, #050709 0%, transparent 100%);
+  }
+  .scan-window::after {
+    bottom: 0;
+    background: linear-gradient(to top, #050709 0%, transparent 100%);
+  }
+
+  /* Actieve kanaal highlight-balk in het midden */
+  .scan-cursor {
+    position: absolute;
+    top: 50%; left: 0; right: 0;
+    transform: translateY(-50%);
+    height: 26px;
+    background: rgba(232,160,32,0.08);
+    border-top: 1px solid rgba(232,160,32,0.25);
+    border-bottom: 1px solid rgba(232,160,32,0.25);
+    z-index: 1;
+    pointer-events: none;
+  }
+
+  /* Scrollende kanalenlijst */
+  .scan-list {
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    transition: transform 0.45s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .scan-item {
+    height: 26px;
+    display: flex;
+    align-items: center;
+    padding: 0 12px;
+    gap: 10px;
+    font-family: 'Orbitron', monospace;
+  }
+
+  .scan-item-ch {
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    color: var(--text-dim);
+    min-width: 24px;
+    transition: color 0.3s, text-shadow 0.3s;
+  }
+
+  .scan-item-name {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 10px;
+    letter-spacing: 1.5px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    transition: color 0.3s;
+  }
+
+  .scan-item.active .scan-item-ch {
+    color: var(--accent);
+    text-shadow: 0 0 10px var(--accent);
+  }
+
+  .scan-item.active .scan-item-name {
+    color: rgba(232,160,32,0.75);
+  }
+
+  /* Scan status badge onder het venster */
+  .scan-status-badge {
+    margin-top: 6px;
+    font-family: 'Orbitron', monospace;
+    font-size: 9px;
+    letter-spacing: 3px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    text-align: right;
+  }
+  .scan-status-badge.active {
+    color: var(--accent);
+    animation: blink 0.8s infinite;
+  }
+
+  /* S-meter */
+  .smeter-block { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+  .smeter-label { font-size: 10px; letter-spacing: 3px; color: var(--text-dim); text-transform: uppercase; }
+  .smeter-bars  { display: flex; gap: 3px; align-items: flex-end; }
+  .smeter-bar   { width: 10px; border-radius: 2px 2px 0 0; opacity: 0.15; transition: opacity 0.1s; }
+  .smeter-bar.active { opacity: 1; }
+
+  /* Volume knob */
+  .volume-block { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+  .ctrl-label   { font-size: 10px; letter-spacing: 3px; color: var(--text-dim); text-transform: uppercase; text-align: center; }
+
+  .knob-container { position: relative; width: 72px; height: 72px; cursor: ns-resize; }
+  .knob-bg {
+    width: 72px; height: 72px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 35%, #2e3848, #141820);
+    border: 2px solid #2e3848;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.05);
+  }
+  .knob-indicator {
+    position: absolute;
+    top: 8px; left: 50%;
+    width: 3px; height: 12px;
+    background: var(--accent);
+    border-radius: 2px;
+    transform-origin: 50% 28px;
+  }
+  .volume-slider {
+    width: 80px;
+    -webkit-appearance: none;
+    height: 3px;
+    border-radius: 2px;
+    background: var(--steel);
+    outline: none;
+  }
+  .volume-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 14px; height: 14px;
+    border-radius: 50%;
+    background: var(--accent);
+    cursor: pointer;
+    box-shadow: 0 0 6px var(--accent);
+  }
+
+
+  /* ── Camera panel ── */
+  .camera-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+  }
+
+  .camera-title {
+    font-family: 'Cinzel', serif;
+    font-size: 12px;
+    letter-spacing: 4px;
+    color: var(--accent);
+    text-transform: uppercase;
+  }
+
+  .camera-controls {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+
+  .cam-live-badge {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 10px;
+    letter-spacing: 2px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+  }
+
+  /* Twee camera's naast elkaar */
+  .camera-dual {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+
+  @media (max-width: 640px) {
+    .camera-dual { grid-template-columns: 1fr; }
+  }
+
+  .camera-slot-label {
+    font-size: 9px;
+    letter-spacing: 3px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+
+  /* Camera viewport */
+  .camera-viewport {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 16/9;
+    background: #040608;
+    border-radius: 8px;
+    border: 1px solid #0f1318;
+    overflow: hidden;
+    box-shadow: inset 0 2px 8px rgba(0,0,0,0.5);
+  }
+
+  .camera-viewport video {
+    width: 100%; height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+
+  /* CRT scanlines */
+  .camera-viewport::after {
+    content: '';
+    position: absolute; inset: 0;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent, transparent 2px,
+      rgba(0,0,0,0.07) 2px, rgba(0,0,0,0.07) 4px
+    );
+    pointer-events: none;
+    z-index: 2;
+  }
+
+  /* Corner brackets */
+  .cam-corner { position: absolute; width: 20px; height: 20px; z-index: 3; pointer-events: none; }
+  .cam-corner.tl { top: 12px;    left: 12px;  border-top: 2px solid var(--accent); border-left:  2px solid var(--accent); }
+  .cam-corner.tr { top: 12px;    right: 12px; border-top: 2px solid var(--accent); border-right: 2px solid var(--accent); }
+  .cam-corner.bl { bottom: 12px; left: 12px;  border-bottom: 2px solid var(--accent); border-left:  2px solid var(--accent); }
+  .cam-corner.br { bottom: 12px; right: 12px; border-bottom: 2px solid var(--accent); border-right: 2px solid var(--accent); }
+
+  /* Overlay badges */
+  .cam-overlay-top {
+    position: absolute;
+    top: 14px; left: 50%;
+    transform: translateX(-50%);
+    z-index: 4;
+    display: flex; align-items: center; gap: 8px;
+    pointer-events: none;
+  }
+
+  .cam-rec-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--red);
+    box-shadow: 0 0 6px var(--red);
+    animation: blink 1.2s infinite;
+  }
+
+  .cam-name-badge {
+    font-family: 'Orbitron', monospace;
+    font-size: 11px;
+    letter-spacing: 3px;
+    color: var(--accent);
+    background: rgba(8,11,14,0.78);
+    padding: 4px 10px;
+    border-radius: 3px;
+    border: 1px solid rgba(232,160,32,0.28);
+    text-transform: uppercase;
+  }
+
+  .cam-overlay-bottom {
+    position: absolute;
+    bottom: 12px; left: 16px; right: 16px;
+    z-index: 4;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    pointer-events: none;
+  }
+
+  .cam-location {
+    font-size: 11px;
+    letter-spacing: 2px;
+    color: rgba(176,190,197,0.65);
+    text-transform: uppercase;
+  }
+
+  .cam-timestamp {
+    font-family: 'Orbitron', monospace;
+    font-size: 10px;
+    color: rgba(232,160,32,0.55);
+    letter-spacing: 1px;
+  }
+
+  /* Loading state */
+  .cam-loading {
+    position: absolute; inset: 0;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    gap: 12px;
+    z-index: 5;
+    background: #040608;
+    transition: opacity 0.4s;
+  }
+  .cam-loading.hidden { opacity: 0; pointer-events: none; }
+
+  .cam-loading-icon {
+    font-family: 'Orbitron', monospace;
+    font-size: 36px;
+    color: var(--text-dim);
+    animation: pulse 1.4s infinite;
+  }
+
+  .cam-loading-text {
+    font-size: 11px;
+    letter-spacing: 3px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+  }
+
+  /* Boot overlay */
+  .boot-overlay {
+    position: fixed; inset: 0;
+    background: #060809;
+    display: flex; align-items: center; justify-content: center;
+    z-index: 200;
+    transition: opacity 0.5s;
+  }
+  .boot-overlay.hidden { opacity: 0; pointer-events: none; }
+
+  .boot-content {
+    display: flex; flex-direction: column; align-items: center; gap: 16px;
+  }
+  .boot-brand {
+    font-family: 'Cinzel', serif;
+    font-size: 18px; letter-spacing: 6px;
+    color: var(--accent); text-transform: uppercase;
+  }
+  .boot-channel {
+    font-family: 'Orbitron', monospace;
+    font-size: 80px; font-weight: 900;
+    color: var(--accent);
+    text-shadow: 0 0 30px var(--accent);
+  }
+  .boot-sub {
+    font-size: 11px; letter-spacing: 4px;
+    color: var(--text-dim); text-transform: uppercase;
+  }
+
+  /* Animations */
+  @keyframes blink { 0%,100%{ opacity:1; } 50%{ opacity:0.15; } }
+  @keyframes pulse { 0%,100%{ opacity:0.35; } 50%{ opacity:1; } }
+
+  audio { display: none; }
+
+  /* ── Mobiel ── */
+  @media (max-width: 768px) {
+    body { padding: 12px; }
+
+    .panel { padding: 16px; }
+
+    /* Display-blok: scan-display onder de kanaalweergave op smal scherm */
+    .display-block { flex-direction: column; gap: 16px; align-items: flex-start; }
+    .scan-display  { align-items: flex-start; width: 100%; }
+    .scan-window   { width: 100%; }
+
+    /* Controls: smeter en volume onder elkaar */
+    .controls-row { flex-wrap: wrap; gap: 16px; }
+
+    /* Weerstation: 2 kolommen op mobiel */
+    .weather-grid { grid-template-columns: repeat(2, 1fr) !important; }
+
+    /* Getijdentabel: compacter */
+    .tij-table th, .tij-table td { padding: 7px 8px; font-size: 12px; }
+
+    /* AIS kaart: iets minder hoog */
+    .ais-map-wrap { aspect-ratio: 4/3; }
+
+    /* Ticker wat kleiner */
+    .ticker-inner { font-size: 9px; }
+  }
+
+  /* ── Weerstation + Getijden: gedeelde tegel-stijl ── */
+  .data-grid {
+    display: grid;
+    gap: 10px;
+    margin-bottom: 14px;
+  }
+  .data-grid-4 { grid-template-columns: repeat(4, 1fr); }
+  .data-grid-3 { grid-template-columns: repeat(3, 1fr); }
+  .data-grid-2 { grid-template-columns: repeat(2, 1fr); }
+  @media (max-width: 700px) {
+    .data-grid-4, .data-grid-3 { grid-template-columns: repeat(2, 1fr); }
+  }
+  @media (max-width: 400px) {
+    .data-grid-4, .data-grid-3, .data-grid-2 { grid-template-columns: 1fr; }
+  }
+
+  .dtile {
+    background: #060809;
+    border: 1px solid #0f1318;
+    border-radius: 8px;
+    padding: 12px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    box-shadow: inset 0 2px 6px rgba(0,0,0,0.4);
+  }
+  .dtile-label {
+    font-size: 9px;
+    letter-spacing: 3px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+  }
+  .dtile-value {
+    font-family: 'Orbitron', monospace;
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--accent);
+    line-height: 1;
+    text-shadow: 0 0 14px rgba(232,160,32,0.25);
+  }
+  .dtile-value.small { font-size: 18px; }
+  .dtile-unit {
+    font-size: 10px;
+    letter-spacing: 2px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+  }
+  .dtile.warn .dtile-value { color: var(--red); text-shadow: 0 0 12px rgba(192,57,43,0.4); }
+  .dtile.low  .dtile-value { color: #5a8fa8; text-shadow: 0 0 12px rgba(90,143,168,0.3); }
+
+  /* Beaufort-balk */
+  .bft-bar { display: flex; gap: 2px; margin-top: 5px; }
+  .bft-seg {
+    flex: 1; height: 4px; border-radius: 2px;
+    background: #1a2030; transition: background 0.4s;
+  }
+  .bft-seg.on-green  { background: var(--green); }
+  .bft-seg.on-orange { background: #f39c12; }
+  .bft-seg.on-red    { background: var(--red); }
+
+  /* Windroos */
+  .wind-rose { width: 44px; height: 44px; margin-top: 4px; }
+  .wind-rose svg { width: 100%; height: 100%; }
+
+  /* Marifoonbericht blok */
+  .marifoon-block {
+    background: #060809;
+    border: 1px solid #0f1318;
+    border-radius: 8px;
+    padding: 14px 16px;
+    margin-bottom: 14px;
+  }
+  .marifoon-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+  }
+  .marifoon-district {
+    font-family: 'Orbitron', monospace;
+    font-size: 10px;
+    letter-spacing: 3px;
+    color: var(--accent);
+    text-transform: uppercase;
+  }
+  .marifoon-time {
+    font-size: 9px;
+    letter-spacing: 2px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+  }
+  .marifoon-warning {
+    font-family: 'Orbitron', monospace;
+    font-size: 11px;
+    letter-spacing: 2px;
+    padding: 6px 12px;
+    border-radius: 4px;
+    margin-bottom: 10px;
+    text-transform: uppercase;
+  }
+  .marifoon-warning.geen {
+    background: rgba(39,174,96,0.12);
+    color: var(--green);
+    border: 1px solid rgba(39,174,96,0.25);
+  }
+  .marifoon-warning.actief {
+    background: rgba(192,57,43,0.15);
+    color: var(--red);
+    border: 1px solid rgba(192,57,43,0.3);
+    animation: blink 1.4s infinite;
+  }
+  .marifoon-body {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 13px;
+    line-height: 1.55;
+    color: var(--text);
+    white-space: pre-wrap;
+    letter-spacing: 0.3px;
+  }
+  .marifoon-body .hl { color: var(--accent); font-weight: 600; }
+  .marifoon-body .lbl {
+    display: block;
+    font-size: 10px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    margin-top: 8px;
+  }
+  .marifoon-body .lbl:first-child { margin-top: 0; }
+
+  /* Getijden: tabel */
+  .tij-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 13px;
+    letter-spacing: 0.5px;
+  }
+  .tij-table th {
+    font-size: 9px; letter-spacing: 3px;
+    color: var(--text-dim); text-transform: uppercase;
+    padding: 6px 12px; text-align: left;
+    border-bottom: 1px solid var(--rim);
+  }
+  .tij-table td {
+    padding: 9px 12px;
+    border-bottom: 1px solid #0f1318;
+    color: var(--text);
+  }
+  .tij-table tr:last-child td { border-bottom: none; }
+  .tij-table tr.hoog td { color: var(--accent); }
+  .tij-table tr.laag td { color: #5a8fa8; }
+  .tij-table tr.next td { background: rgba(232,160,32,0.06); }
+  .tij-table tr.next td:first-child { border-left: 2px solid var(--accent); }
+  .tij-badge {
+    display: inline-block;
+    font-family: 'Orbitron', monospace;
+    font-size: 9px; letter-spacing: 1px;
+    padding: 2px 7px; border-radius: 3px;
+    text-transform: uppercase;
+  }
+  .tij-badge.hoog { background: rgba(232,160,32,0.15); color: var(--accent); }
+  .tij-badge.laag { background: rgba(90,143,168,0.15); color: #5a8fa8; }
+
+  /* Getijden: mini grafiek */
+  .tij-graph-wrap {
+    background: #060809;
+    border: 1px solid #0f1318;
+    border-radius: 6px;
+    overflow: hidden;
+    height: 70px;
+    margin-bottom: 14px;
+  }
+  canvas#tijGraph { display: block; width: 100%; height: 70px; }
+
+  /* Gedeelde footer-regel */
+  .panel-updated {
+    font-size: 9px; letter-spacing: 2px;
+    color: var(--text-dim); text-align: right;
+    margin-top: 8px;
+  }
+
+  /* Ticker — blijft voor de marifoonwaarschuwings-samenvatting bovenaan */
+  .ticker-wrap {
+    background: #060809; border: 1px solid #0f1318;
+    border-radius: 6px; padding: 0 16px;
+    overflow: hidden; height: 34px;
+    display: flex; align-items: center;
+    margin-bottom: 14px;
+  }
+  .ticker-inner {
+    display: flex; white-space: nowrap;
+    animation: ticker-scroll 60s linear infinite;
+    font-family: 'Orbitron', monospace;
+    font-size: 10px; letter-spacing: 2px;
+    color: var(--accent); text-transform: uppercase;
+  }
+  @keyframes ticker-scroll {
+    0%   { transform: translateX(100vw); }
+    100% { transform: translateX(-100%); }
+  }
+
+  /* Legacy aliases — voor alle bestaande code die weather-tile/weather-grid gebruikt */
+  .weather-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; margin-bottom: 16px; }
+  @media (max-width: 640px) { .weather-grid { grid-template-columns: repeat(2,1fr); } }
+  .weather-tile { background:#060809; border:1px solid #0f1318; border-radius:8px; padding:14px 16px; display:flex; flex-direction:column; gap:6px; }
+  .weather-tile-label { font-size:9px; letter-spacing:3px; color:var(--text-dim); text-transform:uppercase; }
+  .weather-tile-value { font-family:'Orbitron',monospace; font-size:26px; font-weight:700; color:var(--accent); line-height:1; }
+  .weather-tile-unit  { font-size:10px; letter-spacing:2px; color:var(--text-dim); text-transform:uppercase; }
+  .weather-tile.alert .weather-tile-value { color:var(--red); }
+  .ticker-label { font-size:9px; letter-spacing:3px; color:var(--text-dim); text-transform:uppercase; margin-bottom:8px; }
+  .weather-updated { font-size:9px; letter-spacing:2px; color:var(--text-dim); text-align:right; margin-top:8px; }
+
+  /* ── AIS paneel ── */
+  .ais-map-wrap {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 16/7;
+    border-radius: 8px;
+    border: 1px solid #0f1318;
+    overflow: hidden;
+    background: #040608;
+    box-shadow: inset 0 2px 8px rgba(0,0,0,0.5);
+  }
+
+  .ais-map-wrap iframe {
+    position: absolute;
+    inset: 0;
+    width: 100%; height: 100%;
+    border: none;
+    display: block;
+    filter: brightness(0.90) saturate(0.8) contrast(1.05);
+  }
+
+  /* ── Getijdentabel ── */
+  .tij-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 13px;
+    letter-spacing: 0.5px;
+  }
+
+  .tij-table th {
+    font-size: 9px;
+    letter-spacing: 3px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    padding: 6px 12px;
+    text-align: left;
+    border-bottom: 1px solid var(--rim);
+  }
+
+  .tij-table td {
+    padding: 9px 12px;
+    border-bottom: 1px solid #0f1318;
+    color: var(--text);
+  }
+
+  .tij-table tr:last-child td { border-bottom: none; }
+
+  .tij-table tr.hoog td { color: var(--accent); }
+  .tij-table tr.laag td { color: #5a8fa8; }
+  .tij-table tr.next td { background: rgba(232,160,32,0.06); }
+  .tij-table tr.next td:first-child { border-left: 2px solid var(--accent); }
+
+  .tij-badge {
+    display: inline-block;
+    font-family: 'Orbitron', monospace;
+    font-size: 9px;
+    letter-spacing: 1px;
+    padding: 2px 7px;
+    border-radius: 3px;
+    text-transform: uppercase;
+  }
+  .tij-badge.hoog { background: rgba(232,160,32,0.15); color: var(--accent); }
+  .tij-badge.laag { background: rgba(90,143,168,0.15); color: #5a8fa8; }
+
+  footer {
+    width: 100%; max-width: 1200px;
+    text-align: center;
+    padding: 12px 0 20px;
+    font-size: 10px; letter-spacing: 3px;
+    color: var(--text-dim); text-transform: uppercase;
+  }
+</style>
+</head>
+<body>
+
+<!-- Boot overlay -->
+<div class="boot-overlay" id="bootOverlay">
+  <div class="boot-content">
+    <div class="boot-brand">Lubberts Maritiem</div>
+    <div class="boot-channel" id="bootCh">01</div>
+    <div class="boot-sub">VHF Marine Radio — Terschelling</div>
+  </div>
+</div>
+
+<!-- Header -->
+<header>
+  <div class="brand">Lubberts Maritiem · VHF Terschelling</div>
+  <div class="utc-clock" id="utcClock">00:00:00 UTC</div>
+</header>
+
+<!-- ═══════════════════════════ RADIO PANEEL ═══════════════════════════ -->
+<div class="panel">
+
+  <!-- Display: channel + scanner -->
+  <div class="display-block">
+
+    <div class="ch-left">
+      <div class="channel-label-small">Kanaal</div>
+      <div class="channel-number" id="chDisplay">02</div>
+      <div class="channel-name" id="chName">VC Brandaris</div>
+      <div class="led-row">
+        <div class="led-item"><div class="led pwr"></div>PWR</div>
+        <div class="led-item"><div class="led rx" id="ledRx"></div>RX</div>
+        <div class="led-item"><div class="led" id="ledTx"></div>TX</div>
+      </div>
+    </div>
+
+    <!-- Scan display rechts -->
+    <div class="scan-display">
+      <div class="scan-display-label">Scan</div>
+      <div class="scan-window">
+        <div class="scan-cursor"></div>
+        <div class="scan-list" id="scanList"></div>
+      </div>
+      <div class="scan-status-badge" id="scanBadge">● Standby</div>
+    </div>
+
+  </div>
+
+  <!-- Waveform -->
+  <div class="waveform-block">
+    <canvas id="waveform"></canvas>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- Bottom controls -->
+  <div class="controls-row">
+
+    <div class="rx-status">
+      <div class="rx-indicator" id="rxIndicator">● RX LIVE</div>
+      <div class="rx-subtitle">Terschelling VHF</div>
+    </div>
+
+    <div class="smeter-block">
+      <div class="smeter-label">Signal</div>
+      <div class="smeter-bars" id="smeterBars"></div>
+    </div>
+
+    <div class="volume-block">
+      <div class="ctrl-label">Volume</div>
+      <div class="knob-container" id="knob">
+        <div class="knob-bg"></div>
+        <div class="knob-indicator" id="knobIndicator"></div>
+      </div>
+      <input type="range" class="volume-slider" id="volSlider" min="0" max="100" value="80"
+             oninput="setVolume(this.value)">
+    </div>
+
+  </div>
+
+</div>
+
+<!-- ═══════════════════════════ CAMERA PANEEL ═══════════════════════════ -->
+<div class="panel">
+
+  <div class="camera-header">
+    <div class="camera-title">Havencamera — Live</div>
+    <div class="camera-controls">
+      <div class="cam-live-badge">
+        <div class="led rx"></div>LIVE
+      </div>
+    </div>
+  </div>
+
+  <div class="camera-dual">
+
+    <!-- CAM 1 -->
+    <div>
+      <div class="camera-slot-label">CAM 1 — Havenkom</div>
+      <div class="camera-viewport">
+        <div class="cam-corner tl"></div>
+        <div class="cam-corner tr"></div>
+        <div class="cam-corner bl"></div>
+        <div class="cam-corner br"></div>
+        <div class="cam-overlay-top">
+          <div class="cam-rec-dot"></div>
+          <div class="cam-name-badge">CAM 1 — Havenkom</div>
+        </div>
+        <div class="cam-overlay-bottom">
+          <div class="cam-location">Terschelling · Havenkom</div>
+          <div class="cam-timestamp" id="camTimestamp1">--:--:-- UTC</div>
+        </div>
+        <video id="camVideo1" muted playsinline autoplay></video>
+        <div class="cam-loading" id="camLoading1">
+          <div class="cam-loading-icon">◎</div>
+          <div class="cam-loading-text" id="camLoadingText1">Stream verbinden…</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CAM 2 -->
+    <div>
+      <div class="camera-slot-label">CAM 2 — Veerkade</div>
+      <div class="camera-viewport">
+        <div class="cam-corner tl"></div>
+        <div class="cam-corner tr"></div>
+        <div class="cam-corner bl"></div>
+        <div class="cam-corner br"></div>
+        <div class="cam-overlay-top">
+          <div class="cam-rec-dot"></div>
+          <div class="cam-name-badge">CAM 2 — Veerkade</div>
+        </div>
+        <div class="cam-overlay-bottom">
+          <div class="cam-location">Terschelling · Veerkade</div>
+          <div class="cam-timestamp" id="camTimestamp2">--:--:-- UTC</div>
+        </div>
+        <video id="camVideo2" muted playsinline autoplay></video>
+        <div class="cam-loading" id="camLoading2">
+          <div class="cam-loading-icon">◎</div>
+          <div class="cam-loading-text" id="camLoadingText2">Stream verbinden…</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+</div>
+
+<!-- ═══════════════════════════ AIS ALLE SCHEPEN ═══════════════════════════ -->
+<div class="panel">
+
+  <div class="camera-header">
+    <div class="camera-title">AIS — Scheepvaart Brandaris</div>
+    <div class="camera-controls">
+      <div class="cam-live-badge">
+        <div class="led rx"></div>AIS LIVE
+      </div>
+    </div>
+  </div>
+
+  <div class="ais-map-wrap">
+    <div class="cam-corner tl"></div>
+    <div class="cam-corner tr"></div>
+    <div class="cam-corner bl"></div>
+    <div class="cam-corner br"></div>
+    <iframe
+      src="https://www.marinetraffic.com/en/ais/embed/zoom:11/centery:53.37/centerx:5.22/maptype:0/shownames:true/mmsi:0/shipid:0/fleet:/fleet_id:/vtypes:/showmenu:false/remember:false"
+      loading="lazy"
+      allowfullscreen
+      title="AIS scheepvaart rondom Terschelling">
+    </iframe>
+  </div>
+
+</div>
+
+<!-- ═══════════════════════ WEERSTATION — HOORN TERSCHELLING ═══════════════ -->
+<div class="panel">
+
+  <div class="camera-header">
+    <div class="camera-title">Weerstation — Hoorn Terschelling</div>
+    <div class="camera-controls">
+      <div class="cam-live-badge">
+        <div class="led rx" id="weatherLed"></div>OPEN-METEO
+      </div>
+    </div>
+  </div>
+
+  <!-- Rij 1: wind + richting + stoten + temp -->
+  <div class="data-grid data-grid-4" style="margin-bottom:10px;">
+
+    <div class="dtile" id="dtWind">
+      <div class="dtile-label">Wind</div>
+      <div class="dtile-value" id="dvWind">—</div>
+      <div class="dtile-unit">knopen</div>
+      <div class="bft-bar" id="bftBar"></div>
+    </div>
+
+    <div class="dtile">
+      <div class="dtile-label">Richting</div>
+      <div class="dtile-value" id="dvDir">—</div>
+      <div class="dtile-unit" id="dvDirText">—</div>
+      <div class="wind-rose">
+        <svg viewBox="0 0 44 44" id="windRoseSvg">
+          <circle cx="22" cy="22" r="20" fill="none" stroke="#1a2430" stroke-width="1"/>
+          <text x="22" y="7"  text-anchor="middle" fill="#546e7a" font-size="6" font-family="Barlow Condensed">N</text>
+          <text x="22" y="40" text-anchor="middle" fill="#546e7a" font-size="6" font-family="Barlow Condensed">S</text>
+          <text x="5"  y="24" text-anchor="middle" fill="#546e7a" font-size="6" font-family="Barlow Condensed">W</text>
+          <text x="39" y="24" text-anchor="middle" fill="#546e7a" font-size="6" font-family="Barlow Condensed">O</text>
+          <g id="windArrow" transform="rotate(0 22 22)">
+            <polygon points="22,6 19,22 22,19 25,22" fill="#e8a020"/>
+            <polygon points="22,38 19,22 22,25 25,22" fill="#546e7a"/>
+          </g>
+        </svg>
+      </div>
+    </div>
+
+    <div class="dtile" id="dtGusts">
+      <div class="dtile-label">Windstoten</div>
+      <div class="dtile-value" id="dvGusts">—</div>
+      <div class="dtile-unit">knopen</div>
+    </div>
+
+    <div class="dtile">
+      <div class="dtile-label">Temperatuur</div>
+      <div class="dtile-value" id="dvTemp">—</div>
+      <div class="dtile-unit">°C</div>
+    </div>
+
+  </div>
+
+  <!-- Rij 2: zicht + druk + vochtigheid + dauwpunt -->
+  <div class="data-grid data-grid-4" style="margin-bottom:14px;">
+
+    <div class="dtile">
+      <div class="dtile-label">Zicht</div>
+      <div class="dtile-value" id="dvVis">—</div>
+      <div class="dtile-unit">km</div>
+    </div>
+
+    <div class="dtile">
+      <div class="dtile-label">Luchtdruk</div>
+      <div class="dtile-value small" id="dvPres">—</div>
+      <div class="dtile-unit">hPa</div>
+    </div>
+
+    <div class="dtile">
+      <div class="dtile-label">Vochtigheid</div>
+      <div class="dtile-value" id="dvHum">—</div>
+      <div class="dtile-unit">%</div>
+    </div>
+
+    <div class="dtile">
+      <div class="dtile-label">Dauwpunt</div>
+      <div class="dtile-value" id="dvDew">—</div>
+      <div class="dtile-unit">°C</div>
+    </div>
+
+  </div>
+
+  <!-- Marifoonbericht KNMI — district Harlingen -->
+  <div class="marifoon-block">
+    <div class="marifoon-header">
+      <div class="marifoon-district" id="marifoonDistrict">▸ Marifoonbericht KNMI</div>
+      <div class="marifoon-time" id="marifoonTime">—</div>
+    </div>
+    <div class="marifoon-warning geen" id="marifoonWarning">Waarschuwing laden…</div>
+    <div class="marifoon-body" id="marifoonBody">—</div>
+  </div>
+
+  <div class="panel-updated" id="weatherUpdated">Laden…</div>
+
+</div>
+
+<!-- ════════════════════════ GETIJDEN — WEST-TERSCHELLING ════════════════════ -->
+<div class="panel">
+
+  <div class="camera-header">
+    <div class="camera-title">Getijden — West-Terschelling</div>
+    <div class="camera-controls">
+      <div class="cam-live-badge">
+        <div class="led rx" id="tijLed"></div>RWS LIVE
+      </div>
+    </div>
+  </div>
+
+  <!-- Actuele stand + volgende + tijd -->
+  <div class="data-grid data-grid-3" style="margin-bottom:12px;">
+
+    <div class="dtile" id="dtWaterstand">
+      <div class="dtile-label">Waterstand NAP</div>
+      <div class="dtile-value" id="tijWaterstand">—</div>
+      <div class="dtile-unit">cm</div>
+    </div>
+
+    <div class="dtile" id="dtNextTide">
+      <div class="dtile-label" id="tijNextLabel">Volgend HW/LW</div>
+      <div class="dtile-value small" id="tijNextValue">—</div>
+      <div class="dtile-unit" id="tijNextUnit">—</div>
+    </div>
+
+    <div class="dtile">
+      <div class="dtile-label">Gemeten om</div>
+      <div class="dtile-value small" id="tijMeettijd">—</div>
+      <div class="dtile-unit">lokaal</div>
+    </div>
+
+  </div>
+
+  <!-- Mini getijgrafiek (canvas) -->
+  <div class="tij-graph-wrap">
+    <canvas id="tijGraph"></canvas>
+  </div>
+
+  <!-- Getijdentabel: vandaag t/m overmorgen -->
+  <table class="tij-table">
+    <thead>
+      <tr>
+        <th>Dag</th>
+        <th>Tijd</th>
+        <th>Type</th>
+        <th>NAP (cm)</th>
+      </tr>
+    </thead>
+    <tbody id="tijBody">
+      <tr><td colspan="4" style="text-align:center;color:var(--text-dim);padding:20px;">Laden…</td></tr>
+    </tbody>
+  </table>
+
+  <div class="panel-updated" id="tijUpdated">Laden…</div>
+
+</div>
+
+<footer>Lubberts Maritiem · VHF Marine Radio Network · Terschelling</footer>
+
+<audio id="audioPlayer" preload="none" crossorigin="anonymous"></audio>
+
+<script>
+// ── Configuratie ─────────────────────────────────────────────────────────────
+const STREAM_URL = 'https://www.tbandsma.nl:8443/;';
+
+// Terschelling-specifieke scankanalen
+const SCAN_CHANNELS = [
+  { ch:  0, name: 'Onderling K.N.R.M.' },
+  { ch:  2, name: 'VC Brandaris'        },
+  { ch:  4, name: 'Meldpost Waddenzee'  },
+  { ch:  8, name: 'Algemeen marifoon'   },
+  { ch: 10, name: 'Aanroep binnenwater' },
+  { ch: 12, name: 'Havendienst Terschelling' },
+  { ch: 16, name: 'Noodkanaal'          },
+  { ch: 19, name: 'Loods kanaal'        },
+  { ch: 63, name: 'VTS Off Texel'       },
+  { ch: 67, name: 'Search and rescue'   },
+  { ch: 97, name: 'Kustwacht Vliegtuig' },
+];
+
+const CAMERAS = {
+  cam1: {
+    url:      'https://584b389d712f9.streamlock.net/live-cam/havenkom-ts/playlist.m3u8?wowzatokenendtime=1778523889&wowzatokenhash=q0vYSOilqvaYyLz1cLGlqF4kwgzOO2FPcQbyXhyMnm4=&wowzatokenstarttime=1778522029',
+    name:     'CAM 1 — Havenkom',
+    location: 'Terschelling · Havenkom',
+  },
+  cam2: {
+    url:      'https://5b8d2cbe62ad6.streamlock.net/live/veerkade.stream/playlist.m3u8?wowzatokenendtime=1778525745&wowzatokenhash=I7xqmNNsEObakNLCs_EodQ471UgHSF1w1XbxDIvy_EE=&wowzatokenstarttime=1778522085',
+    name:     'CAM 2 — Veerkade',
+    location: 'Terschelling · Veerkade',
+  }
+};
+
+// ── State ─────────────────────────────────────────────────────────────────────
+let volume         = 80;
+let knobAngle      = 135;
+let audioCtx       = null;
+let analyser       = null;
+let sourceNode     = null;
+let knobDragging   = false;
+let knobStartY     = 0;
+let knobStartAngle = 0;
+let currentHls     = null;
+let scanIndex      = 0;
+let scanTimer      = null;
+let scanRunning    = false;
+
+// ── DOM refs ──────────────────────────────────────────────────────────────────
+const audioPlayer = document.getElementById('audioPlayer');
+const volSlider   = document.getElementById('volSlider');
+const knobEl      = document.getElementById('knob');
+const knobInd     = document.getElementById('knobIndicator');
+const ledRx       = document.getElementById('ledRx');
+const canvas      = document.getElementById('waveform');
+const ctx2d       = canvas.getContext('2d');
+
+// ── Boot sequence ─────────────────────────────────────────────────────────────
+(function boot() {
+  const overlay = document.getElementById('bootOverlay');
+  const bootCh  = document.getElementById('bootCh');
+  let n = 1;
+  const iv = setInterval(() => {
+    bootCh.textContent = String(n).padStart(2, '0');
+    n++;
+    if (n > 16) {
+      clearInterval(iv);
+      setTimeout(() => {
+        bootCh.textContent = '16';
+        setTimeout(() => {
+          overlay.classList.add('hidden');
+          buildSmeter();
+          animateSmeter();
+          buildScanDisplay();
+          startScan();
+          startAudio();
+          startCameras();
+          startDataFeeds();
+        }, 600);
+      }, 300);
+    }
+  }, 80);
+})();
+
+// ── Audio ─────────────────────────────────────────────────────────────────────
+// Amplitude meting via aparte fetch-stream (werkt ondanks CORS-blokkade op MediaElement)
+// De <audio> element speelt het geluid; fetch() leest dezelfde stream parallel voor meting.
+
+let fetchAmplitude = 0;   // live gemeten RMS via fetch-decoder
+let fetchActive    = false;
+
+async function startFetchAnalyser() {
+  try {
+    const response = await fetch(STREAM_URL, {
+      headers: { 'Icy-MetaData': '0' }
+    });
+    if (!response.ok || !response.body) return;
+
+    const reader  = response.body.getReader();
+    const ac      = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 22050 });
+    let   buffer  = new Uint8Array(0);
+    const CHUNK   = 32768;  // 32 kB — groot genoeg voor meerdere complete MP3-frames
+
+    fetchActive = true;
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      // Voeg nieuwe bytes toe aan buffer
+      const merged = new Uint8Array(buffer.length + value.length);
+      merged.set(buffer);
+      merged.set(value, buffer.length);
+      buffer = merged;
+
+      // Zodra we genoeg bytes hebben, decodeer en meet amplitude
+      if (buffer.length >= CHUNK) {
+        const chunk = buffer.slice(0, CHUNK);
+        buffer      = buffer.slice(CHUNK);
+
+        try {
+          // Probeer MP3 te decoderen via Web Audio
+          const decoded = await ac.decodeAudioData(chunk.buffer.slice(0));
+          const ch      = decoded.getChannelData(0);
+          let   sum     = 0;
+          for (let i = 0; i < ch.length; i++) sum += ch[i] * ch[i];
+          const rms = Math.sqrt(sum / ch.length);
+          fetchAmplitude = fetchAmplitude * 0.65 + rms * 0.35;
+        } catch (_) {
+          // Fallback: ruwe byte-amplitude als proxy
+          // MP3-audiobytes hebben hogere variantie bij loud signaal
+          let byteSum = 0;
+          const skip = Math.max(1, Math.floor(chunk.length / 512));
+          let count = 0;
+          for (let i = 0; i < chunk.length; i += skip) {
+            byteSum += Math.abs(chunk[i] - 128);
+            count++;
+          }
+          // Normaliseer naar 0–1 (gemiddelde afwijking van 128, max ~128)
+          const rawAmp = (byteSum / count) / 128;
+          fetchAmplitude = fetchAmplitude * 0.75 + rawAmp * 0.25;
+        }
+      }
+    }
+  } catch (e) {
+    console.warn('Fetch-analyser gestopt:', e.message);
+    fetchActive = false;
+  }
+}
+
+function startAudio() {
+  audioPlayer.src    = STREAM_URL;
+  audioPlayer.volume = 0.8;
+
+  audioPlayer.addEventListener('error', (e) => {
+    console.error('Audio stream fout:', e);
+    const ind = document.getElementById('rxIndicator');
+    if (ind) { ind.textContent = '○ GEEN SIGNAAL'; ind.style.color = 'var(--text-dim)'; }
+  });
+
+  audioPlayer.addEventListener('playing', () => {
+    ledRx.classList.add('rx');
+    const ind = document.getElementById('rxIndicator');
+    if (ind) { ind.textContent = '● RX LIVE'; ind.style.color = 'var(--accent)'; }
+    if (!fetchActive) startFetchAnalyser();
+  });
+
+  audioPlayer.addEventListener('pause', () => {
+    ledRx.classList.remove('rx');
+  });
+
+  const tryPlay = () => {
+    audioPlayer.play().catch(() => {});
+  };
+
+  // Directe poging — slaagt als browser autoplay toestaat
+  tryPlay();
+
+  // Fallback: eerste interactie start de audio alsnog
+  const onInteract = () => {
+    tryPlay();
+    const ind = document.getElementById('rxIndicator');
+    if (ind && ind.textContent.includes('KLIK')) {
+      ind.textContent = '● RX LIVE';
+      ind.style.color = 'var(--accent)';
+    }
+  };
+  document.addEventListener('click',      onInteract, { once: true });
+  document.addEventListener('touchstart', onInteract, { once: true });
+
+  // Toon hint als autoplay geblokkeerd wordt
+  setTimeout(() => {
+    if (audioPlayer.paused) {
+      const ind = document.getElementById('rxIndicator');
+      if (ind) { ind.textContent = '▶ KLIK OM TE STARTEN'; ind.style.color = 'var(--text-dim)'; }
+    }
+  }, 800);
+
+  drawWaveform();
+}
+
+// ── Waveform ──────────────────────────────────────────────────────────────────
+function resizeCanvas() {
+  canvas.width  = canvas.offsetWidth;
+  canvas.height = canvas.offsetHeight;
+}
+window.addEventListener('resize', resizeCanvas);
+resizeCanvas();
+
+// Gesmoothde amplitude voor de fallback-golf
+let waveAmplitude   = 0;
+let wavePhase       = 0;
+let wavePhase2      = 0;
+let prevRms         = 0;
+
+function drawWaveform() {
+  requestAnimationFrame(drawWaveform);
+  const W = canvas.width, H = canvas.height;
+  const mid = H / 2;
+  ctx2d.clearRect(0, 0, W, H);
+
+  // ── Geval 1: echte analyser-data beschikbaar ──────────────────────────────
+  if (analyser) {
+    const data = new Uint8Array(analyser.frequencyBinCount);
+    analyser.getByteTimeDomainData(data);
+
+    // Bereken RMS om te bepalen of er geluid is
+    let sum = 0;
+    for (let i = 0; i < data.length; i++) {
+      const v = (data[i] - 128) / 128;
+      sum += v * v;
+    }
+    const rms = Math.sqrt(sum / data.length);
+    // Smooth de amplitude voor zachte aan/uitfade
+    waveAmplitude = waveAmplitude * 0.85 + rms * 0.15;
+
+    const isActive = waveAmplitude > 0.005;
+    const alpha    = isActive ? 0.85 : 0.25;
+    const glow     = isActive ? 6    : 0;
+
+    ctx2d.strokeStyle = `rgba(232,160,32,${alpha})`;
+    ctx2d.lineWidth   = isActive ? 1.8 : 1;
+    ctx2d.shadowColor = 'rgba(232,160,32,0.5)';
+    ctx2d.shadowBlur  = glow;
+    ctx2d.beginPath();
+
+    const sw = W / data.length;
+    let x = 0;
+    for (let i = 0; i < data.length; i++) {
+      const v = data[i] / 128.0;
+      const y = mid - (v - 1) * mid * 2.2;  // vergroot uitslag
+      i === 0 ? ctx2d.moveTo(x, y) : ctx2d.lineTo(x, y);
+      x += sw;
+    }
+    ctx2d.stroke();
+    ctx2d.shadowBlur = 0;
+    return;
+  }
+
+  // ── Geval 2: gebruik fetch-amplitude als beschikbaar, anders stilte ──────
+  const playing = !audioPlayer.paused && !audioPlayer.ended;
+  // fetchAmplitude is de live gemeten RMS uit de parallelle fetch-stream
+  // Schaal omhoog zodat zelfs zacht signaal zichtbaar is (rms is typisch 0.01–0.15)
+  const measured = fetchActive ? Math.min(fetchAmplitude * 5, 1.0) : 0;
+  const target   = playing ? (fetchActive ? measured : 0.45) : 0;
+  waveAmplitude  = waveAmplitude * 0.88 + target * 0.12;
+
+  // Stil? Teken alleen een dimme flatline
+  if (waveAmplitude < 0.01) {
+    ctx2d.strokeStyle = '#1a2432';
+    ctx2d.lineWidth   = 1;
+    ctx2d.beginPath();
+    ctx2d.moveTo(0, mid);
+    ctx2d.lineTo(W, mid);
+    ctx2d.stroke();
+    return;
+  }
+
+  // Meerdere overlappende sinussen → onregelmatige VHF radiogolf
+  wavePhase  += 0.055 + waveAmplitude * 0.04;
+  wavePhase2 += 0.031 + waveAmplitude * 0.02;
+
+  const amp   = mid * waveAmplitude * 0.80;
+  const alpha = 0.35 + waveAmplitude * 0.60;
+  const glow  = waveAmplitude * 14;
+
+  ctx2d.strokeStyle = `rgba(232,160,32,${alpha})`;
+  ctx2d.lineWidth   = 1.5 + waveAmplitude * 0.5;
+  ctx2d.shadowColor = 'rgba(232,160,32,0.5)';
+  ctx2d.shadowBlur  = glow;
+  ctx2d.beginPath();
+
+  for (let x = 0; x < W; x++) {
+    const t  = (x / W) * Math.PI * 8;
+    // Drie sinussen + ruis voor spraak-achtig patroon
+    const y  = mid
+      + Math.sin(t + wavePhase)              * amp
+      + Math.sin(t * 1.73 + wavePhase2)     * amp * 0.45
+      + Math.sin(t * 3.1  + wavePhase * 0.7) * amp * 0.18
+      + (Math.random() - 0.5) * amp * 0.20;
+    x === 0 ? ctx2d.moveTo(x, y) : ctx2d.lineTo(x, y);
+  }
+  ctx2d.stroke();
+  ctx2d.shadowBlur = 0;
+}
+
+// ── S-meter ───────────────────────────────────────────────────────────────────
+function buildSmeter() {
+  const bars = document.getElementById('smeterBars');
+  bars.innerHTML = '';
+  const heights = [8,10,14,18,22,26,30,34,38,42];
+  const colors  = ['#27ae60','#27ae60','#27ae60','#27ae60','#27ae60',
+                   '#f39c12','#f39c12','#e74c3c','#e74c3c','#e74c3c'];
+  heights.forEach((h, i) => {
+    const b = document.createElement('div');
+    b.className = 'smeter-bar';
+    b.style.height     = h + 'px';
+    b.style.background = colors[i];
+    b.dataset.index    = i;
+    bars.appendChild(b);
+  });
+}
+
+function animateSmeter() {
+  setInterval(() => {
+    let level = 0;
+    if (analyser) {
+      // Gebruik frequentiedata als de analyser live is
+      const data = new Uint8Array(analyser.frequencyBinCount);
+      analyser.getByteFrequencyData(data);
+      const avg = data.reduce((a, b) => a + b, 0) / data.length;
+      level = Math.round((avg / 255) * 10);
+    } else if (fetchActive) {
+      // Directe fetch-amplitude: rms * 5 schaal → 0–1, dan naar 0–10 balkjes
+      level = Math.round(Math.min(fetchAmplitude * 5, 1.0) * 10);
+    } else {
+      // Fallback: toon middelniveau als audio speelt
+      level = (!audioPlayer.paused && !audioPlayer.ended) ? 4 : 0;
+    }
+    level = Math.min(10, Math.max(0, level));
+    document.querySelectorAll('.smeter-bar').forEach(b => {
+      b.classList.toggle('active', parseInt(b.dataset.index) < level);
+    });
+  }, 80);
+}
+
+// ── Volume ────────────────────────────────────────────────────────────────────
+function setVolume(v) {
+  volume = parseInt(v);
+  audioPlayer.volume = volume / 100;
+  volSlider.value    = volume;
+  knobAngle = -135 + (volume / 100) * 270;
+  knobInd.style.transform = `translateX(-50%) rotate(${knobAngle}deg)`;
+}
+
+knobEl.addEventListener('mousedown', e => {
+  knobDragging   = true;
+  knobStartY     = e.clientY;
+  knobStartAngle = knobAngle;
+  e.preventDefault();
+});
+document.addEventListener('mousemove', e => {
+  if (!knobDragging) return;
+  const delta = knobStartY - e.clientY;
+  let angle   = knobStartAngle + delta * 1.5;
+  angle       = Math.max(-135, Math.min(135, angle));
+  knobAngle   = angle;
+  setVolume(Math.round(((angle + 135) / 270) * 100));
+});
+document.addEventListener('mouseup', () => { knobDragging = false; });
+
+setVolume(80);
+
+// ── Camera ────────────────────────────────────────────────────────────────────
+const hlsInstances = {};
+
+function startCameraSlot(key, videoEl, loadingEl, loadingTextEl) {
+  const cam = CAMERAS[key];
+  loadingTextEl.textContent = 'Stream verbinden…';
+  loadingEl.classList.remove('hidden');
+
+  if (hlsInstances[key]) { hlsInstances[key].destroy(); delete hlsInstances[key]; }
+
+  if (typeof Hls !== 'undefined' && Hls.isSupported()) {
+    const hls = new Hls({ liveSyncDurationCount: 3, liveMaxLatencyDurationCount: 6 });
+    hls.loadSource(cam.url);
+    hls.attachMedia(videoEl);
+    hls.on(Hls.Events.MANIFEST_PARSED, () => {
+      videoEl.play().catch(() => {});
+      loadingEl.classList.add('hidden');
+    });
+    hls.on(Hls.Events.ERROR, (ev, data) => {
+      if (data.fatal) loadingTextEl.textContent = 'Stream tijdelijk niet beschikbaar';
+    });
+    hlsInstances[key] = hls;
+  } else if (videoEl.canPlayType('application/vnd.apple.mpegurl')) {
+    videoEl.src = cam.url;
+    videoEl.addEventListener('loadedmetadata', () => {
+      videoEl.play().catch(() => {});
+      loadingEl.classList.add('hidden');
+    }, { once: true });
+  } else {
+    loadingTextEl.textContent = 'Browser niet ondersteund';
+  }
+}
+
+function startCameras() {
+  startCameraSlot('cam1',
+    document.getElementById('camVideo1'),
+    document.getElementById('camLoading1'),
+    document.getElementById('camLoadingText1'));
+  startCameraSlot('cam2',
+    document.getElementById('camVideo2'),
+    document.getElementById('camLoading2'),
+    document.getElementById('camLoadingText2'));
+}
+
+// ── Klokken ───────────────────────────────────────────────────────────────────
+function utcString() {
+  const now = new Date();
+  return [now.getUTCHours(), now.getUTCMinutes(), now.getUTCSeconds()]
+    .map(n => String(n).padStart(2, '0')).join(':') + ' UTC';
+}
+
+setInterval(() => {
+  const t = utcString();
+  document.getElementById('utcClock').textContent = t;
+  const ts1 = document.getElementById('camTimestamp1');
+  const ts2 = document.getElementById('camTimestamp2');
+  if (ts1) ts1.textContent = t;
+  if (ts2) ts2.textContent = t;
+}, 1000);
+
+document.getElementById('utcClock').textContent = utcString();
+
+// ── Scan display ──────────────────────────────────────────────────────────────
+// Bouwt een scrollende lijst van kanalen in het scan-venster.
+// De actieve kanaal staat altijd midden in het venster.
+// ITEM_H moet overeenkomen met de CSS height van .scan-item (26px).
+const ITEM_H = 26;
+
+function buildScanDisplay() {
+  const list  = document.getElementById('scanList');
+  const total = SCAN_CHANNELS.length;
+  list.innerHTML = '';
+
+  // Bouw 5× de lijst zodat we ruim kunnen scrollen zonder de rand te raken.
+  // Stille reset halverwege zorgt voor een naadloze oneindige loop.
+  const COPIES = 5;
+  for (let c = 0; c < COPIES; c++) {
+    SCAN_CHANNELS.forEach((item, i) => {
+      const el = document.createElement('div');
+      el.className = 'scan-item';
+      el.dataset.index = i;
+      el.innerHTML = `
+        <span class="scan-item-ch">${String(item.ch).padStart(2,'0')}</span>
+        <span class="scan-item-name">${item.name}</span>
+      `;
+      list.appendChild(el);
+    });
+  }
+
+  // Begin in kopie 2 (midden van de 5) zodat er zowel boven als onder ruimte is
+  scanIndex = 2 * total;
+  positionScan(scanIndex, false);
+}
+
+function positionScan(rawIdx, animate) {
+  const list    = document.getElementById('scanList');
+  const total   = SCAN_CHANNELS.length;
+  const modIdx  = ((rawIdx % total) + total) % total;
+  const winMid  = 130 / 2 - ITEM_H / 2;
+  const offset  = -(rawIdx * ITEM_H) + winMid;
+
+  list.style.transition = animate ? 'transform 0.45s cubic-bezier(0.4, 0, 0.2, 1)' : 'none';
+  list.style.transform  = `translateY(${offset}px)`;
+
+  list.querySelectorAll('.scan-item').forEach(el => {
+    el.classList.toggle('active', parseInt(el.dataset.index) === modIdx);
+  });
+
+  const ch = SCAN_CHANNELS[modIdx];
+  document.getElementById('chDisplay').textContent = String(ch.ch).padStart(2, '0');
+  document.getElementById('chName').textContent    = ch.name;
+}
+
+function startScan() {
+  scanRunning = true;
+  const badge = document.getElementById('scanBadge');
+  badge.textContent = '▶ Scanning';
+  badge.classList.add('active');
+
+  const total = SCAN_CHANNELS.length;
+
+  scanTimer = setInterval(() => {
+    scanIndex++;
+
+    // Stille reset: zodra we kopie 4 bereiken, spring terug naar kopie 2
+    // (zelfde modulaire positie, geen zichtbare sprong).
+    if (scanIndex >= 4 * total) {
+      const mod = scanIndex % total;
+      scanIndex = 2 * total + mod;
+      positionScan(scanIndex, false);
+      return;
+    }
+
+    positionScan(scanIndex, true);
+  }, 750);
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// WEERSTATION — Open-Meteo · Station Hoorn Terschelling (lat 53.392, lon 5.346)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+const WEATHER_URL =
+  'https://api.open-meteo.com/v1/forecast' +
+  '?latitude=53.392&longitude=5.346' +
+  '&current=temperature_2m,relative_humidity_2m,dew_point_2m,' +
+  'wind_speed_10m,wind_direction_10m,wind_gusts_10m,visibility,pressure_msl' +
+  '&wind_speed_unit=kn' +
+  '&timezone=Europe%2FAmsterdam';
+
+const DIR_LABELS = ['N','NNO','NO','ONO','O','OZO','ZO','ZZO','Z','ZZW','ZW','WZW','W','WNW','NW','NNW'];
+const degToCompass = deg => DIR_LABELS[Math.round(deg / 22.5) % 16];
+const bftFromKnots = kn => {
+  const s = [1,3,6,10,16,21,27,33,40,47,55,63];
+  for (let i = 0; i < s.length; i++) if (kn < s[i]) return i;
+  return 12;
+};
+
+// Windroos: subtiele naald-animatie
+let windRoseTarget = 0, windRoseCurrent = 0, windRoseAnimId = null;
+function startWindRoseAnimation() {
+  if (windRoseAnimId) return;
+  let dp = 0;
+  (function tick() {
+    dp += 0.018;
+    windRoseCurrent = windRoseTarget
+      + Math.sin(dp) * 1.8 + Math.sin(dp * 2.3) * 0.7 + (Math.random() - 0.5) * 0.4;
+    const arrow = document.getElementById('windArrow');
+    if (arrow) arrow.setAttribute('transform', `rotate(${windRoseCurrent} 22 22)`);
+    windRoseAnimId = requestAnimationFrame(tick);
+  })();
+}
+
+function buildBftBar(bft) {
+  const bar = document.getElementById('bftBar');
+  if (!bar) return;
+  bar.innerHTML = '';
+  for (let i = 0; i < 12; i++) {
+    const seg = document.createElement('div');
+    seg.className = 'bft-seg' + (i < bft ? ' ' + (bft <= 4 ? 'on-green' : bft <= 7 ? 'on-orange' : 'on-red') : '');
+    bar.appendChild(seg);
+  }
+}
+
+async function fetchWeather() {
+  try {
+    const r    = await fetch(WEATHER_URL);
+    const json = await r.json();
+    const c    = json.current;
+
+    const windKn = Math.round(c.wind_speed_10m);
+    const gustKn = Math.round(c.wind_gusts_10m);
+    const dirDeg = Math.round(c.wind_direction_10m);
+    const bft    = bftFromKnots(windKn);
+
+    document.getElementById('dvWind').textContent    = windKn;
+    document.getElementById('dvGusts').textContent   = gustKn;
+    document.getElementById('dvDir').textContent     = dirDeg + '°';
+    document.getElementById('dvDirText').textContent = degToCompass(dirDeg);
+    document.getElementById('dvTemp').textContent    = c.temperature_2m.toFixed(1);
+    document.getElementById('dvVis').textContent     = (c.visibility / 1000).toFixed(1);
+    document.getElementById('dvPres').textContent    = Math.round(c.pressure_msl);
+    document.getElementById('dvHum').textContent     = Math.round(c.relative_humidity_2m);
+    document.getElementById('dvDew').textContent     = c.dew_point_2m != null ? c.dew_point_2m.toFixed(1) : '—';
+
+    document.getElementById('dtGusts').classList.toggle('warn', gustKn >= 33);
+    document.getElementById('dtWind').classList.toggle('warn', bft >= 6);
+
+    windRoseTarget = dirDeg;
+    startWindRoseAnimation();
+    buildBftBar(bft);
+    document.getElementById('weatherLed').classList.add('rx');
+
+    const [dt, tm] = c.time.split('T');
+    const [y,mo,d] = dt.split('-').map(Number);
+    const [h,mi]   = tm.split(':').map(Number);
+    const t = new Date(y, mo-1, d, h, mi);
+    document.getElementById('weatherUpdated').textContent =
+      'Open-Meteo · Station Hoorn Terschelling · ' +
+      t.toLocaleTimeString('nl-NL', { hour:'2-digit', minute:'2-digit' });
+
+  } catch(e) {
+    console.error('fetchWeather:', e);
+    document.getElementById('weatherUpdated').textContent = 'Weerdata tijdelijk niet beschikbaar';
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// MARIFOONBERICHT KNMI, via de eigen API
+// Bron: knmi.nl/nederland-nu/maritiem/marifoon, server-side opgehaald door
+// /api/marifoon. Rechtstreeks uit de browser lukt niet, die pagina stuurt
+// geen CORS-header en een publieke proxy is te onbetrouwbaar.
+// ═══════════════════════════════════════════════════════════════════════════════
+
+// Terschelling valt onder marifoonsector Harlingen. De API vertaalt de
+// locatiesleutel zelf naar de juiste sector.
+const API_LOCATIE  = 'terschelling';
+const MARIFOON_URL = '/api/marifoon?locatie=' + API_LOCATIE;
+const GETIJ_URL    = '/api/getij?locatie=' + API_LOCATIE;
+
+const escapeHtml = str => String(str)
+  .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+// Windkracht, onweer en zichtbeperkingen oplichten in de verwachtingstekst.
+const markeer = html => html.replace(
+  /(\b\d{1,2}-\d{1,2}\b|windkracht \d+|storm\w*|windstoten|onweer|slecht zicht|zicht slecht|mist\w*)/gi,
+  '<span class="hl">$1</span>'
+);
+
+function renderMarifoon(d) {
+  const distEl = document.getElementById('marifoonDistrict');
+  const warnEl = document.getElementById('marifoonWarning');
+  const bodyEl = document.getElementById('marifoonBody');
+  const timeEl = document.getElementById('marifoonTime');
+
+  if (distEl) {
+    distEl.textContent = d.districten
+      ? '▸ Marifoonbericht KNMI — District ' + d.districten
+      : '▸ Marifoonbericht KNMI';
+  }
+  if (timeEl) timeEl.textContent = d.opgesteld ? 'Opgesteld ' + d.opgesteld : '—';
+
+  // KNMI zet bovenaan het bericht een regel over waarschuwingen voor de
+  // scheepvaart. Staat daar iets anders dan "geen waarschuwingen", dan is het
+  // een echte waarschuwing en gaat het blok op rood.
+  const w = (d.waarschuwing || '').trim();
+  const isAlert = w !== '' && !/geen waarschuwing/i.test(w);
+  if (warnEl) {
+    warnEl.textContent = isAlert ? '⚠ ' + w : '✓ ' + (w || 'Geen waarschuwingen');
+    warnEl.className   = 'marifoon-warning ' + (isAlert ? 'actief' : 'geen');
+  }
+
+  if (!bodyEl) return;
+  if (!d.tekst) {
+    bodyEl.textContent = 'Geen actuele verwachting voor deze sector.';
+    return;
+  }
+
+  const delen = [];
+  if (d.periode) delen.push('<span class="lbl">' + escapeHtml(d.periode) + '</span>');
+  delen.push(markeer(escapeHtml(d.tekst)));
+  if (d.weeroverzicht) {
+    delen.push('<span class="lbl">Weeroverzicht</span>' + markeer(escapeHtml(d.weeroverzicht)));
+  }
+  if (d.volgendBericht) {
+    delen.push('<span class="lbl">' + escapeHtml(d.volgendBericht) + '</span>');
+  }
+  bodyEl.innerHTML = delen.join('\n');
+}
+
+async function fetchMarifoon() {
+  try {
+    const r = await fetch(MARIFOON_URL, { cache: 'no-store' });
+    const j = await r.json();
+    if (!r.ok || j.error) throw new Error(j.error || ('status ' + r.status));
+    renderMarifoon(j);
+  } catch(e) {
+    console.error('fetchMarifoon:', e);
+    const warnEl = document.getElementById('marifoonWarning');
+    const bodyEl = document.getElementById('marifoonBody');
+    if (warnEl) { warnEl.textContent = 'Bericht tijdelijk niet beschikbaar'; warnEl.className = 'marifoon-warning geen'; }
+    if (bodyEl) bodyEl.textContent = 'Kon /api/marifoon niet bereiken.';
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// GETIJDEN, via de eigen API
+// Bron: Rijkswaterstaat WaterWebservices (ddapi20), astronomisch getij plus
+// de gemeten waterstand, server-side opgehaald door /api/getij.
+// Dit verving Open-Meteo marine, dat een globaal model per heel uur is en in
+// de Waddenzee ruim een uur naast de werkelijke HW/LW-tijden zit.
+// ═══════════════════════════════════════════════════════════════════════════════
+
+async function fetchGetij() {
+  const r = await fetch(GETIJ_URL, { cache: 'no-store' });
+  const j = await r.json();
+  if (!r.ok || j.error) throw new Error(j.error || ('status ' + r.status));
+  return j;
+}
+
+function drawTijGraph(rows, stand) {
+  const canvas = document.getElementById('tijGraph');
+  if (!canvas || !rows.length) return;
+  canvas.width  = canvas.offsetWidth  || canvas.parentElement?.offsetWidth || 400;
+  canvas.height = 70;
+  const W = canvas.width, H = canvas.height;
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0,0,W,H);
+
+  const tMin = rows[0].t.getTime(), tMax = rows[rows.length-1].t.getTime();
+  const vals = rows.map(r=>r.val);
+  const vMin = Math.min(...vals)-15, vMax = Math.max(...vals)+15;
+  const xOf  = t => ((t-tMin)/(tMax-tMin))*W;
+  const yOf  = v => H - ((v-vMin)/(vMax-vMin))*H;
+
+  const grad = ctx.createLinearGradient(0,0,0,H);
+  grad.addColorStop(0,'rgba(232,160,32,0.2)');
+  grad.addColorStop(1,'rgba(232,160,32,0.02)');
+
+  ctx.beginPath();
+  ctx.moveTo(0, yOf(0));
+  rows.forEach((r,i) => {
+    if (i===0) { ctx.lineTo(xOf(r.t),yOf(r.val)); return; }
+    const p = rows[i-1], cx = (xOf(p.t)+xOf(r.t))/2;
+    ctx.bezierCurveTo(cx,yOf(p.val),cx,yOf(r.val),xOf(r.t),yOf(r.val));
+  });
+  ctx.lineTo(W, yOf(0));
+  ctx.closePath();
+  ctx.fillStyle = grad; ctx.fill();
+
+  ctx.beginPath();
+  rows.forEach((r,i) => {
+    if (i===0) { ctx.moveTo(xOf(r.t),yOf(r.val)); return; }
+    const p = rows[i-1], cx = (xOf(p.t)+xOf(r.t))/2;
+    ctx.bezierCurveTo(cx,yOf(p.val),cx,yOf(r.val),xOf(r.t),yOf(r.val));
+  });
+  ctx.strokeStyle = 'rgba(232,160,32,0.8)'; ctx.lineWidth = 1.5; ctx.stroke();
+
+  if (stand) {
+    const nx = xOf(stand.tijd.getTime());
+    if (nx > 0 && nx < W) {
+      ctx.beginPath(); ctx.moveTo(nx,0); ctx.lineTo(nx,H);
+      ctx.strokeStyle = 'rgba(39,174,96,0.55)'; ctx.lineWidth = 1;
+      ctx.setLineDash([3,3]); ctx.stroke(); ctx.setLineDash([]);
+    }
+  }
+}
+
+function renderGetijden(rows, stand) {
+  const nowMs   = Date.now();
+  const nextIdx = rows.findIndex(r => r.t.getTime() > nowMs);
+
+  if (nextIdx >= 0) {
+    const nxt = rows[nextIdx];
+    document.getElementById('tijNextLabel').textContent  = nxt.type === 'hoog' ? '▲ Volgend hoogwater' : '▽ Volgend laagwater';
+    document.getElementById('tijNextValue').textContent  = nxt.t.toLocaleTimeString('nl-NL',{hour:'2-digit',minute:'2-digit',timeZone:'Europe/Amsterdam'});
+    document.getElementById('tijNextUnit').textContent   = nxt.t.toLocaleDateString('nl-NL',{weekday:'short',day:'numeric',month:'short',timeZone:'Europe/Amsterdam'});
+    const tile = document.getElementById('dtNextTide');
+    tile.className = 'dtile' + (nxt.type === 'laag' ? ' low' : '');
+  }
+
+  const tbody = document.getElementById('tijBody');
+  tbody.innerHTML = rows.map((r,i) => {
+    const dag  = r.t.toLocaleDateString('nl-NL',{weekday:'short',day:'numeric',month:'short',timeZone:'Europe/Amsterdam'});
+    const tijd = r.t.toLocaleTimeString('nl-NL',{hour:'2-digit',minute:'2-digit',timeZone:'Europe/Amsterdam'});
+    const badge= `<span class="tij-badge ${r.type}">${r.type==='hoog' ? '▲ HW' : '▽ LW'}</span>`;
+    const nap  = (r.val>=0?'+':'')+r.val;
+    const cls  = [r.type, i===nextIdx?'next':''].filter(Boolean).join(' ');
+    return `<tr class="${cls}"><td>${dag}</td><td>${tijd}</td><td>${badge}</td><td>${nap} cm</td></tr>`;
+  }).join('') || '<tr><td colspan="4" style="text-align:center;color:var(--text-dim);padding:16px;">Geen getijdata</td></tr>';
+
+  try { drawTijGraph(rows, stand); } catch(e) { console.warn('drawTijGraph:', e); }
+}
+
+async function fetchGetijden() {
+  try {
+    const data = await fetchGetij();
+
+    // Actueel gemeten stand. Mag ontbreken, dan tonen we alleen de tafel.
+    const stand = data.actueel
+      ? { peil: data.actueel.waardeCm, tijd: new Date(data.actueel.tijdstip) }
+      : null;
+
+    // Extremen van vandaag tot en met overmorgen, in de vorm die
+    // renderGetijden en drawTijGraph verwachten.
+    const now      = new Date();
+    const dayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const dayEnd   = new Date(dayStart); dayEnd.setDate(dayEnd.getDate() + 3);
+
+    const rows = (data.extremen || [])
+      .map(e => ({
+        t:    new Date(e.tijdstip),
+        val:  e.waardeCm != null ? e.waardeCm : 0,
+        type: e.type === 'hoogwater' ? 'hoog' : 'laag',
+      }))
+      .filter(r => r.t >= dayStart && r.t <= dayEnd);
+
+    const peilEl = document.getElementById('tijWaterstand');
+    const tijdEl = document.getElementById('tijMeettijd');
+    const wsEl   = document.getElementById('dtWaterstand');
+    if (stand) {
+      peilEl.textContent = (stand.peil >= 0 ? '+' : '') + stand.peil;
+      tijdEl.textContent = stand.tijd.toLocaleTimeString('nl-NL', { hour:'2-digit', minute:'2-digit', timeZone:'Europe/Amsterdam' });
+      wsEl.className     = 'dtile' + (stand.peil < -40 ? ' low' : '');
+    } else {
+      peilEl.textContent = '—'; tijdEl.textContent = '—';
+    }
+
+    renderGetijden(rows, stand);
+    document.getElementById('tijLed').classList.add('rx');
+    document.getElementById('tijUpdated').textContent =
+      'Rijkswaterstaat WaterWebservices · ' + data.locatie + ' · ' +
+      new Date().toLocaleTimeString('nl-NL', { hour:'2-digit', minute:'2-digit' });
+
+  } catch(e) {
+    console.error('fetchGetijden:', e);
+    document.getElementById('tijUpdated').textContent = 'Getijdata tijdelijk niet beschikbaar';
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// DATA-FEEDS starten
+// ═══════════════════════════════════════════════════════════════════════════════
+function startDataFeeds() {
+  fetchWeather();
+  fetchMarifoon();
+  fetchGetijden();
+  setInterval(fetchWeather,   10 * 60 * 1000);
+  setInterval(fetchMarifoon,  60 * 60 * 1000);
+  setInterval(fetchGetijden,  30 * 60 * 1000);
+}
+
+</script>
+</body>
+</html>
