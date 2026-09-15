@@ -711,6 +711,15 @@
     letter-spacing: 0.3px;
   }
   .marifoon-body .hl { color: var(--accent); font-weight: 600; }
+  .marifoon-body .lbl {
+    display: block;
+    font-size: 10px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    margin-top: 8px;
+  }
+  .marifoon-body .lbl:first-child { margin-top: 0; }
 
   /* Getijden: tabel */
   .tij-table {
@@ -1129,7 +1138,7 @@
   <!-- Marifoonbericht KNMI — district Harlingen -->
   <div class="marifoon-block">
     <div class="marifoon-header">
-      <div class="marifoon-district">▸ Marifoonbericht KNMI — District Harlingen</div>
+      <div class="marifoon-district" id="marifoonDistrict">▸ Marifoonbericht KNMI</div>
       <div class="marifoon-time" id="marifoonTime">—</div>
     </div>
     <div class="marifoon-warning geen" id="marifoonWarning">Waarschuwing laden…</div>
@@ -1801,138 +1810,96 @@ async function fetchWeather() {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// MARIFOONBERICHT KNMI — District Harlingen
-// Bron: waterberichtgeving.rws.nl/dynamisch/textpagina/kuwabericht.txt
+// MARIFOONBERICHT KNMI, via de eigen API
+// Bron: knmi.nl/nederland-nu/maritiem/marifoon, server-side opgehaald door
+// /api/marifoon. Rechtstreeks uit de browser lukt niet, die pagina stuurt
+// geen CORS-header en een publieke proxy is te onbetrouwbaar.
 // ═══════════════════════════════════════════════════════════════════════════════
 
-const KUWA_URL = 'https://waterberichtgeving.rws.nl/dynamisch/textpagina/kuwabericht.txt';
+// Terschelling valt onder marifoonsector Harlingen. De API vertaalt de
+// locatiesleutel zelf naar de juiste sector.
+const API_LOCATIE  = 'terschelling';
+const MARIFOON_URL = '/api/marifoon?locatie=' + API_LOCATIE;
+const GETIJ_URL    = '/api/getij?locatie=' + API_LOCATIE;
 
-async function fetchKuwa() {
-  try {
-    const r = await fetch(KUWA_URL, { cache: 'no-cache' });
-    if (r.ok) return await r.text();
-  } catch(_) {}
-  try {
-    const r    = await fetch('https://api.allorigins.win/get?url=' + encodeURIComponent(KUWA_URL));
-    const json = await r.json();
-    if (json.contents) return json.contents;
-  } catch(_) {}
-  throw new Error('KUWA niet bereikbaar');
-}
+const escapeHtml = str => String(str)
+  .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
-function parseKuwa(text) {
-  // Aanmaaktijdstip
-  const timeMatch = text.match(/Aanmaak tijdstip:\s*(.+?)(?:\n|$)/);
-  const aanmaak   = timeMatch ? timeMatch[1].trim() : '—';
+// Windkracht, onweer en zichtbeperkingen oplichten in de verwachtingstekst.
+const markeer = html => html.replace(
+  /(\b\d{1,2}-\d{1,2}\b|windkracht \d+|storm\w*|windstoten|onweer|slecht zicht|zicht slecht|mist\w*)/gi,
+  '<span class="hl">$1</span>'
+);
 
-  // Harlingen-waarschuwing uit de tabel bovenaan
-  const warnMatch = text.match(/Harlingen\s{1,6}([A-Z0-9 ]+?)(?:\s{2,}|\n)/);
-  const warning   = warnMatch ? warnMatch[1].trim() : 'GEEN';
-
-  // Kustdistrict ROTTUM (dichtste bij Terschelling), fallback TEXEL
-  let body = '';
-  const rottumIdx = text.indexOf('KUSTDISTRICT ROTTUM');
-  if (rottumIdx !== -1) {
-    const endIdx = text.indexOf('~~~~', rottumIdx + 10);
-    body = endIdx !== -1 ? text.slice(rottumIdx, endIdx).trim() : text.slice(rottumIdx, rottumIdx + 1200).trim();
-  } else {
-    const texelIdx = text.indexOf('KUSTDISTRICT TEXEL');
-    if (texelIdx !== -1) {
-      const endIdx = text.indexOf('~~~~', texelIdx + 10);
-      body = endIdx !== -1 ? text.slice(texelIdx, endIdx).trim() : text.slice(texelIdx, texelIdx + 1200).trim();
-    }
-  }
-  return { aanmaak, warning, body };
-}
-
-function renderMarifoon({ aanmaak, warning, body }) {
+function renderMarifoon(d) {
+  const distEl = document.getElementById('marifoonDistrict');
   const warnEl = document.getElementById('marifoonWarning');
   const bodyEl = document.getElementById('marifoonBody');
   const timeEl = document.getElementById('marifoonTime');
 
-  if (timeEl) timeEl.textContent = aanmaak;
+  if (distEl) {
+    distEl.textContent = d.districten
+      ? '▸ Marifoonbericht KNMI — District ' + d.districten
+      : '▸ Marifoonbericht KNMI';
+  }
+  if (timeEl) timeEl.textContent = d.opgesteld ? 'Opgesteld ' + d.opgesteld : '—';
 
-  const isAlert = warning !== 'GEEN' && warning.trim() !== '';
+  // KNMI zet bovenaan het bericht een regel over waarschuwingen voor de
+  // scheepvaart. Staat daar iets anders dan "geen waarschuwingen", dan is het
+  // een echte waarschuwing en gaat het blok op rood.
+  const w = (d.waarschuwing || '').trim();
+  const isAlert = w !== '' && !/geen waarschuwing/i.test(w);
   if (warnEl) {
-    warnEl.textContent = isAlert ? '⚠ WAARSCHUWING: ' + warning : '✓ GEEN WAARSCHUWING';
+    warnEl.textContent = isAlert ? '⚠ ' + w : '✓ ' + (w || 'Geen waarschuwingen');
     warnEl.className   = 'marifoon-warning ' + (isAlert ? 'actief' : 'geen');
   }
-  if (bodyEl && body) {
-    const clean = body
-      .replace(/^\.{10,}.*$/gm, '')
-      .replace(/^\s*\|\s*$/gm, '')
-      .replace(/\n{3,}/g, '\n\n')
-      .trim();
-    bodyEl.innerHTML = clean
-      .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
-      .replace(/(WAARSCHUWING|STORM|WINDSTOTEN|BFT\s*\d+|GEEN|SLECHT ZICHT)/g,
-               '<span class="hl">$1</span>');
+
+  if (!bodyEl) return;
+  if (!d.tekst) {
+    bodyEl.textContent = 'Geen actuele verwachting voor deze sector.';
+    return;
   }
+
+  const delen = [];
+  if (d.periode) delen.push('<span class="lbl">' + escapeHtml(d.periode) + '</span>');
+  delen.push(markeer(escapeHtml(d.tekst)));
+  if (d.weeroverzicht) {
+    delen.push('<span class="lbl">Weeroverzicht</span>' + markeer(escapeHtml(d.weeroverzicht)));
+  }
+  if (d.volgendBericht) {
+    delen.push('<span class="lbl">' + escapeHtml(d.volgendBericht) + '</span>');
+  }
+  bodyEl.innerHTML = delen.join('\n');
 }
 
 async function fetchMarifoon() {
   try {
-    const text = await fetchKuwa();
-    renderMarifoon(parseKuwa(text));
+    const r = await fetch(MARIFOON_URL, { cache: 'no-store' });
+    const j = await r.json();
+    if (!r.ok || j.error) throw new Error(j.error || ('status ' + r.status));
+    renderMarifoon(j);
   } catch(e) {
     console.error('fetchMarifoon:', e);
     const warnEl = document.getElementById('marifoonWarning');
+    const bodyEl = document.getElementById('marifoonBody');
     if (warnEl) { warnEl.textContent = 'Bericht tijdelijk niet beschikbaar'; warnEl.className = 'marifoon-warning geen'; }
+    if (bodyEl) bodyEl.textContent = 'Kon /api/marifoon niet bereiken.';
   }
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// GETIJDEN — RWS Waterwebservices (ddapi20) · terschelling.west
+// GETIJDEN, via de eigen API
+// Bron: Rijkswaterstaat WaterWebservices (ddapi20), astronomisch getij plus
+// de gemeten waterstand, server-side opgehaald door /api/getij.
+// Dit verving Open-Meteo marine, dat een globaal model per heel uur is en in
+// de Waddenzee ruim een uur naast de werkelijke HW/LW-tijden zit.
 // ═══════════════════════════════════════════════════════════════════════════════
 
-// Open-Meteo Marine — CORS open (access-control-allow-origin: *)
-// Coördinaten: West-Terschelling (53.363 N, 5.220 E)
-// sea_level_height_msl = zeewaterhoogte t.o.v. MSL (~NAP), in meter
-const MARINE_URL =
-  'https://marine-api.open-meteo.com/v1/marine' +
-  '?latitude=53.363&longitude=5.220' +
-  '&current=sea_level_height_msl' +
-  '&hourly=sea_level_height_msl' +
-  '&forecast_days=3' +
-  '&timezone=Europe%2FAmsterdam';
-
-// Parse "2026-05-20T14:00" veilig als lokale tijd (geen Z → browser-inconsistent)
-const parseLocalT = s => {
-  const [d, t] = s.split('T');
-  const [y,mo,dy] = d.split('-').map(Number);
-  const [h,mi]    = t.split(':').map(Number);
-  return new Date(y, mo-1, dy, h, mi);
-};
-
-async function fetchWaterstand() {
-  const r    = await fetch(MARINE_URL);
-  const json = await r.json();
-  const lvl  = json?.current?.sea_level_height_msl;
-  const tim  = json?.current?.time;
-  if (lvl == null) return null;
-  return { peil: Math.round(lvl * 100), tijd: parseLocalT(tim) };
-}
-
-async function fetchGetijtafel() {
-  const r      = await fetch(MARINE_URL);
-  const json   = await r.json();
-  const times  = json?.hourly?.time  ?? [];
-  const levels = json?.hourly?.sea_level_height_msl ?? [];
-
-  // Zoek lokale extremen via drie-punts vergelijking
-  const rows = [];
-  for (let i = 1; i < levels.length - 1; i++) {
-    const p = levels[i-1], c = levels[i], n = levels[i+1];
-    if (p == null || c == null || n == null) continue;
-    if (c > p && c > n) rows.push({ t: parseLocalT(times[i]), val: Math.round(c * 100), type: 'hoog' });
-    else if (c < p && c < n) rows.push({ t: parseLocalT(times[i]), val: Math.round(c * 100), type: 'laag' });
-  }
-
-  // Alleen vandaag t/m overmorgen
-  const now      = new Date();
-  const dayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const dayEnd   = new Date(dayStart); dayEnd.setDate(dayEnd.getDate() + 3);
-  return rows.filter(r => r.t >= dayStart && r.t <= dayEnd);
+async function fetchGetij() {
+  const r = await fetch(GETIJ_URL, { cache: 'no-store' });
+  const j = await r.json();
+  if (!r.ok || j.error) throw new Error(j.error || ('status ' + r.status));
+  return j;
 }
 
 function drawTijGraph(rows, stand) {
@@ -1990,38 +1957,55 @@ function renderGetijden(rows, stand) {
   if (nextIdx >= 0) {
     const nxt = rows[nextIdx];
     document.getElementById('tijNextLabel').textContent  = nxt.type === 'hoog' ? '▲ Volgend hoogwater' : '▽ Volgend laagwater';
-    document.getElementById('tijNextValue').textContent  = nxt.t.toLocaleTimeString('nl-NL',{hour:'2-digit',minute:'2-digit'});
-    document.getElementById('tijNextUnit').textContent   = nxt.t.toLocaleDateString('nl-NL',{weekday:'short',day:'numeric',month:'short'});
+    document.getElementById('tijNextValue').textContent  = nxt.t.toLocaleTimeString('nl-NL',{hour:'2-digit',minute:'2-digit',timeZone:'Europe/Amsterdam'});
+    document.getElementById('tijNextUnit').textContent   = nxt.t.toLocaleDateString('nl-NL',{weekday:'short',day:'numeric',month:'short',timeZone:'Europe/Amsterdam'});
     const tile = document.getElementById('dtNextTide');
     tile.className = 'dtile' + (nxt.type === 'laag' ? ' low' : '');
   }
 
   const tbody = document.getElementById('tijBody');
   tbody.innerHTML = rows.map((r,i) => {
-    const dag  = r.t.toLocaleDateString('nl-NL',{weekday:'short',day:'numeric',month:'short'});
-    const tijd = r.t.toLocaleTimeString('nl-NL',{hour:'2-digit',minute:'2-digit'});
+    const dag  = r.t.toLocaleDateString('nl-NL',{weekday:'short',day:'numeric',month:'short',timeZone:'Europe/Amsterdam'});
+    const tijd = r.t.toLocaleTimeString('nl-NL',{hour:'2-digit',minute:'2-digit',timeZone:'Europe/Amsterdam'});
     const badge= `<span class="tij-badge ${r.type}">${r.type==='hoog' ? '▲ HW' : '▽ LW'}</span>`;
     const nap  = (r.val>=0?'+':'')+r.val;
     const cls  = [r.type, i===nextIdx?'next':''].filter(Boolean).join(' ');
     return `<tr class="${cls}"><td>${dag}</td><td>${tijd}</td><td>${badge}</td><td>${nap} cm</td></tr>`;
   }).join('') || '<tr><td colspan="4" style="text-align:center;color:var(--text-dim);padding:16px;">Geen getijdata</td></tr>';
 
-  drawTijGraph(rows, stand);
+  try { drawTijGraph(rows, stand); } catch(e) { console.warn('drawTijGraph:', e); }
 }
 
 async function fetchGetijden() {
   try {
-    const [standRes, tafelRes] = await Promise.allSettled([fetchWaterstand(), fetchGetijtafel()]);
-    const stand = standRes.status==='fulfilled' ? standRes.value : null;
-    const rows  = (tafelRes.status==='fulfilled' && tafelRes.value?.length) ? tafelRes.value : [];
+    const data = await fetchGetij();
+
+    // Actueel gemeten stand. Mag ontbreken, dan tonen we alleen de tafel.
+    const stand = data.actueel
+      ? { peil: data.actueel.waardeCm, tijd: new Date(data.actueel.tijdstip) }
+      : null;
+
+    // Extremen van vandaag tot en met overmorgen, in de vorm die
+    // renderGetijden en drawTijGraph verwachten.
+    const now      = new Date();
+    const dayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const dayEnd   = new Date(dayStart); dayEnd.setDate(dayEnd.getDate() + 3);
+
+    const rows = (data.extremen || [])
+      .map(e => ({
+        t:    new Date(e.tijdstip),
+        val:  e.waardeCm != null ? e.waardeCm : 0,
+        type: e.type === 'hoogwater' ? 'hoog' : 'laag',
+      }))
+      .filter(r => r.t >= dayStart && r.t <= dayEnd);
 
     const peilEl = document.getElementById('tijWaterstand');
     const tijdEl = document.getElementById('tijMeettijd');
     const wsEl   = document.getElementById('dtWaterstand');
     if (stand) {
-      peilEl.textContent = (stand.peil>=0?'+':'')+stand.peil;
-      tijdEl.textContent = stand.tijd.toLocaleTimeString('nl-NL',{hour:'2-digit',minute:'2-digit',timeZone:'Europe/Amsterdam'});
-      wsEl.className = 'dtile' + (stand.peil < -40 ? ' low' : '');
+      peilEl.textContent = (stand.peil >= 0 ? '+' : '') + stand.peil;
+      tijdEl.textContent = stand.tijd.toLocaleTimeString('nl-NL', { hour:'2-digit', minute:'2-digit', timeZone:'Europe/Amsterdam' });
+      wsEl.className     = 'dtile' + (stand.peil < -40 ? ' low' : '');
     } else {
       peilEl.textContent = '—'; tijdEl.textContent = '—';
     }
@@ -2029,8 +2013,8 @@ async function fetchGetijden() {
     renderGetijden(rows, stand);
     document.getElementById('tijLed').classList.add('rx');
     document.getElementById('tijUpdated').textContent =
-      'Rijkswaterstaat Waterwebservices · ' +
-      new Date().toLocaleTimeString('nl-NL',{hour:'2-digit',minute:'2-digit'});
+      'Rijkswaterstaat WaterWebservices · ' + data.locatie + ' · ' +
+      new Date().toLocaleTimeString('nl-NL', { hour:'2-digit', minute:'2-digit' });
 
   } catch(e) {
     console.error('fetchGetijden:', e);
