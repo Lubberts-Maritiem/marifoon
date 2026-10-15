@@ -759,6 +759,85 @@
   .tij-badge.hoog { background: rgba(232,160,32,0.15); color: var(--accent); }
   .tij-badge.laag { background: rgba(90,143,168,0.15); color: #5a8fa8; }
 
+  /* ── Extra panelen, uitklapbaar onderaan ── */
+  .extra-knop {
+    width: 100%; max-width: 1200px;
+    font-family: 'Cinzel', serif;
+    font-size: 12px; letter-spacing: 4px; text-transform: uppercase;
+    color: var(--accent);
+    background: var(--panel);
+    border: 1px solid var(--rim);
+    border-radius: 12px;
+    padding: 16px 24px;
+    margin-bottom: 20px;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center; gap: 12px;
+    box-shadow: 0 0 0 1px #0a0c10, inset 0 1px 0 rgba(255,255,255,0.04);
+    transition: border-color 0.15s, background 0.15s;
+  }
+  .extra-knop:hover { border-color: rgba(232,160,32,0.4); background: #171c25; }
+  .extra-knop:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .extra-knop .caret { font-family: 'Orbitron', monospace; font-size: 10px; transition: transform 0.2s; }
+  .extra-knop[aria-expanded="true"] .caret { transform: rotate(180deg); }
+
+  #extraPanelen { width: 100%; display: flex; flex-direction: column; align-items: center; }
+
+  /* Getij: aftelklok */
+  .klok-blok {
+    background: #060809; border: 1px solid #0f1318; border-radius: 8px;
+    padding: 20px 22px; display: flex; align-items: center;
+    justify-content: space-between; gap: 20px; flex-wrap: wrap;
+    box-shadow: inset 0 2px 8px rgba(0,0,0,0.5);
+  }
+  .klok-cijfers {
+    font-family: 'Orbitron', monospace;
+    font-size: clamp(38px, 11vw, 64px); font-weight: 900;
+    color: var(--accent); line-height: 1; letter-spacing: -1px;
+    font-variant-numeric: tabular-nums; text-shadow: 0 0 22px rgba(232,160,32,0.3);
+  }
+  .klok-blok.laag .klok-cijfers { color: #5a8fa8; text-shadow: 0 0 22px rgba(90,143,168,0.3); }
+  .klok-sub { font-size: 12px; letter-spacing: 2px; color: var(--text-dim); text-transform: uppercase; margin-top: 8px; }
+  .klok-rechts { text-align: right; min-width: 0; }
+
+  .cyclus { margin-top: 14px; }
+  .cyclus-baan {
+    position: relative; height: 34px;
+    background: linear-gradient(to right, rgba(90,143,168,0.18), rgba(232,160,32,0.18));
+    border: 1px solid #0f1318; border-radius: 6px; overflow: hidden;
+  }
+  .cyclus-nu { position: absolute; top: 0; bottom: 0; width: 2px; background: var(--accent); box-shadow: 0 0 8px var(--accent); transition: left 0.6s; }
+  .cyclus-rand { display: flex; justify-content: space-between; gap: 8px; font-size: 10px; letter-spacing: 2px; color: var(--text-dim); text-transform: uppercase; margin-top: 6px; }
+
+  /* Golven */
+  .golfrij { display: flex; flex-direction: column; gap: 8px; }
+  .golfkaart {
+    background: #060809; border: 1px solid #0f1318; border-radius: 8px;
+    padding: 12px 14px; display: grid; gap: 10px 16px;
+    grid-template-columns: 1fr auto auto auto; align-items: center; min-width: 0;
+  }
+  .golfkaart.zeegat { border-color: rgba(232,160,32,0.3); background: rgba(232,160,32,0.05); }
+  @media (max-width: 640px) { .golfkaart { grid-template-columns: 1fr 1fr; } }
+  .golf-naam { font-size: 14px; letter-spacing: 1px; color: var(--text); min-width: 0; }
+  .golf-naam small { display: block; font-size: 10px; letter-spacing: 2px; color: var(--text-dim); text-transform: uppercase; }
+  .golf-meet { text-align: right; min-width: 0; }
+  .golf-meet b {
+    display: block; font-family: 'Orbitron', monospace; font-size: 20px;
+    font-weight: 700; color: var(--accent); line-height: 1; font-variant-numeric: tabular-nums;
+  }
+  .golf-meet.max b { color: var(--text); font-size: 16px; }
+  .golf-meet.ri b { color: #5a8fa8; font-size: 16px; }
+  .golf-meet span { font-size: 9px; letter-spacing: 2px; color: var(--text-dim); text-transform: uppercase; }
+
+  .verwacht { margin-top: 14px; }
+  .verwacht-kop { font-size: 10px; letter-spacing: 3px; color: var(--text-dim); text-transform: uppercase; margin-bottom: 8px; }
+  .staafjes { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; align-items: end; }
+  .staaf { display: flex; flex-direction: column; align-items: center; gap: 6px; min-width: 0; }
+  .staaf-balk { width: 100%; background: linear-gradient(to top, rgba(232,160,32,0.5), rgba(232,160,32,0.9)); border-radius: 3px 3px 0 0; }
+  .staaf.nu .staaf-balk { background: linear-gradient(to top, rgba(90,143,168,0.5), rgba(90,143,168,0.95)); }
+  .staaf-cm { font-family: 'Orbitron', monospace; font-size: 12px; color: var(--accent); font-variant-numeric: tabular-nums; }
+  .staaf.nu .staaf-cm { color: #5a8fa8; }
+  .staaf-tijd { font-size: 9px; letter-spacing: 1px; color: var(--text-dim); text-transform: uppercase; }
+
   footer {
     width: 100%; max-width: 1200px;
     text-align: center;
@@ -782,7 +861,7 @@
 <!-- Header -->
 <header>
   <div class="brand">Lubberts Maritiem · VHF Terschelling</div>
-  <div class="utc-clock" id="utcClock">00:00:00 UTC</div>
+  <div class="utc-clock" id="utcClock">00:00:00</div>
 </header>
 
 <!-- ═══════════════════════════ RADIO PANEEL ═══════════════════════════ -->
@@ -844,7 +923,7 @@
         </div>
         <div class="cam-overlay-bottom">
           <div class="cam-location">Terschelling · Havenkom</div>
-          <div class="cam-timestamp" id="camTimestamp1">--:--:-- UTC</div>
+          <div class="cam-timestamp" id="camTimestamp1">--:--:--</div>
         </div>
         <video id="camVideo1" muted playsinline autoplay></video>
         <div class="cam-loading" id="camLoading1">
@@ -868,7 +947,7 @@
         </div>
         <div class="cam-overlay-bottom">
           <div class="cam-location">Terschelling · Veerkade</div>
-          <div class="cam-timestamp" id="camTimestamp2">--:--:-- UTC</div>
+          <div class="cam-timestamp" id="camTimestamp2">--:--:--</div>
         </div>
         <video id="camVideo2" muted playsinline autoplay></video>
         <div class="cam-loading" id="camLoading2">
@@ -1062,6 +1141,82 @@
 
 </div>
 
+<!-- ════════════════════════ EXTRA PANELEN ════════════════════════ -->
+<button class="extra-knop" id="extraKnop" type="button" aria-expanded="false" aria-controls="extraPanelen">
+  Extra panelen <span class="caret">▼</span>
+</button>
+
+<div id="extraPanelen" hidden>
+
+  <!-- Aftelklok naar het eerstvolgende extreem -->
+  <div class="panel">
+    <div class="camera-header">
+      <div class="camera-title">Aftelklok — West-Terschelling</div>
+      <div class="camera-controls">
+        <div class="cam-live-badge"><div class="led rx" id="klokLed"></div>Waddendata</div>
+      </div>
+    </div>
+
+    <div class="klok-blok" id="klokBlok">
+      <div>
+        <div class="klok-cijfers" id="klokCijfers">--:--:--</div>
+        <div class="klok-sub" id="klokSub">tot het eerstvolgende getij</div>
+      </div>
+      <div class="klok-rechts">
+        <div class="dtile-label" id="klokDoel">—</div>
+        <div class="dtile-value" id="klokHoogte">—</div>
+        <div class="dtile-unit" id="klokOpzet">cm NAP</div>
+      </div>
+    </div>
+
+    <div class="cyclus">
+      <div class="cyclus-baan"><div class="cyclus-nu" id="cyclusNu" style="left:0%"></div></div>
+      <div class="cyclus-rand">
+        <span id="cyclusVorig">—</span>
+        <span id="cyclusHuidig">—</span>
+        <span id="cyclusVolgend">—</span>
+      </div>
+    </div>
+
+    <div class="data-grid data-grid-2" style="margin-top:14px; margin-bottom:0;">
+      <div class="dtile" id="klokDaarnaTegel">
+        <div class="dtile-label" id="klokDaarnaLabel">Daarna</div>
+        <div class="dtile-value small" id="klokDaarna">—</div>
+        <div class="dtile-unit" id="klokDaarnaSub">—</div>
+      </div>
+      <div class="dtile">
+        <div class="dtile-label">Watertemperatuur</div>
+        <div class="dtile-value small" id="watertemp">—</div>
+        <div class="dtile-unit" id="watertempSub">°C</div>
+      </div>
+    </div>
+
+    <div class="panel-updated" id="klokUpdated">Laden…</div>
+  </div>
+
+  <!-- Golven in het zeegat -->
+  <div class="panel">
+    <div class="camera-header">
+      <div class="camera-title" id="golfTitel">Golven — Zeegat van Terschelling</div>
+      <div class="camera-controls">
+        <div class="cam-live-badge"><div class="led rx" id="golfLed"></div>Meetboeien</div>
+      </div>
+    </div>
+
+    <div class="golfrij" id="golfRij">
+      <div class="golfkaart"><div class="golf-naam">Laden…</div></div>
+    </div>
+
+    <div class="verwacht" id="golfVerwacht" hidden>
+      <div class="verwacht-kop" id="golfVerwachtKop">Verwachting</div>
+      <div class="staafjes" id="golfStaven"></div>
+    </div>
+
+    <div class="panel-updated" id="golfUpdated">Laden…</div>
+  </div>
+
+</div>
+
 <footer>Lubberts Maritiem · VHF Marine Radio Network · Terschelling</footer>
 
 <audio id="audioPlayer" preload="none" crossorigin="anonymous"></audio>
@@ -1244,14 +1399,17 @@ function startCameras() {
 }
 
 // ── Klokken ───────────────────────────────────────────────────────────────────
-function utcString() {
-  const now = new Date();
-  return [now.getUTCHours(), now.getUTCMinutes(), now.getUTCSeconds()]
-    .map(n => String(n).padStart(2, '0')).join(':') + ' UTC';
+// Nederlandse kloktijd, expliciet in Europe/Amsterdam. Dat blijft kloppen als
+// het apparaat op een andere tijdzone staat, en volgt vanzelf de zomertijd.
+function nlString() {
+  return new Date().toLocaleTimeString('nl-NL', {
+    hour: '2-digit', minute: '2-digit', second: '2-digit',
+    hour12: false, timeZone: 'Europe/Amsterdam',
+  });
 }
 
 setInterval(() => {
-  const t = utcString();
+  const t = nlString();
   document.getElementById('utcClock').textContent = t;
   const ts1 = document.getElementById('camTimestamp1');
   const ts2 = document.getElementById('camTimestamp2');
@@ -1259,7 +1417,7 @@ setInterval(() => {
   if (ts2) ts2.textContent = t;
 }, 1000);
 
-document.getElementById('utcClock').textContent = utcString();
+document.getElementById('utcClock').textContent = nlString();
 
 // ── Scan display ──────────────────────────────────────────────────────────────
 // Bouwt een scrollende lijst van kanalen in het scan-venster.
@@ -1604,6 +1762,193 @@ async function fetchGetijden() {
   } catch(e) {
     console.error('fetchGetijden:', e);
     document.getElementById('tijUpdated').textContent = 'Getijdata tijdelijk niet beschikbaar';
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// EXTRA PANELEN
+// Verborgen tot de knop onderaan erop wordt gedrukt. De gegevens worden pas
+// opgehaald bij de eerste keer uitklappen, zodat een bezoeker die ze niet
+// opent ook geen verzoeken veroorzaakt.
+// ═══════════════════════════════════════════════════════════════════════════════
+
+const GOLVEN_URL = '/api/golven?locatie=' + API_LOCATIE;
+
+let extraGestart = false;
+let klokDoelTijd = null;   // moment van het eerstvolgende extreem
+let klokVorigTijd = null;  // het extreem ervoor, voor de cyclusbalk
+let klokIsHoog = true;
+
+const tijdNL = (d, opt) => d.toLocaleTimeString('nl-NL',
+  Object.assign({ hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Amsterdam' }, opt || {}));
+const dagNL = d => d.toLocaleDateString('nl-NL',
+  { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'Europe/Amsterdam' });
+
+document.getElementById('extraKnop').addEventListener('click', () => {
+  const knop = document.getElementById('extraKnop');
+  const blok = document.getElementById('extraPanelen');
+  const open = knop.getAttribute('aria-expanded') === 'true';
+
+  knop.setAttribute('aria-expanded', String(!open));
+  blok.hidden = open;
+
+  if (!open && !extraGestart) {
+    extraGestart = true;
+    vulAftelklok();
+    fetchGolven();
+    setInterval(vulAftelklok, 10 * 60 * 1000);
+    setInterval(fetchGolven,  10 * 60 * 1000);
+  }
+});
+
+// ── Aftelklok ─────────────────────────────────────────────────────────────────
+
+async function vulAftelklok() {
+  try {
+    const data = await fetchGetij();
+    const nu = Date.now();
+
+    const rijen = (data.extremen || [])
+      .map(e => ({ t: new Date(e.tijdstip), val: e.waardeCm, type: e.type, opzet: e.verschilCm }))
+      .sort((a, b) => a.t - b.t);
+
+    const idx = rijen.findIndex(r => r.t.getTime() > nu);
+    if (idx === -1) return;
+
+    const volgend = rijen[idx];
+    const vorig   = idx > 0 ? rijen[idx - 1] : null;
+    const daarna  = rijen[idx + 1] || null;
+
+    klokDoelTijd  = volgend.t;
+    klokVorigTijd = vorig ? vorig.t : null;
+    klokIsHoog    = volgend.type === 'hoogwater';
+
+    document.getElementById('klokBlok').className = 'klok-blok' + (klokIsHoog ? '' : ' laag');
+    document.getElementById('klokSub').textContent = klokIsHoog ? 'tot hoogwater' : 'tot laagwater';
+    document.getElementById('klokDoel').textContent =
+      (klokIsHoog ? 'HW ' : 'LW ') + tijdNL(volgend.t) + ' · ' + dagNL(volgend.t);
+    document.getElementById('klokHoogte').textContent = (volgend.val >= 0 ? '+' : '') + volgend.val;
+    document.getElementById('klokOpzet').textContent = volgend.opzet == null
+      ? 'cm NAP'
+      : 'cm NAP · opzet ' + (volgend.opzet >= 0 ? '+' : '') + volgend.opzet;
+
+    // Randen van de cyclusbalk.
+    document.getElementById('cyclusVorig').textContent = vorig
+      ? (vorig.type === 'hoogwater' ? 'HW ' : 'LW ') + tijdNL(vorig.t) + ' · ' + vorig.val
+      : '—';
+    document.getElementById('cyclusHuidig').textContent = data.actueel
+      ? 'nu · ' + (data.actueel.waardeCm >= 0 ? '+' : '') + data.actueel.waardeCm + ' cm'
+      : 'nu';
+    document.getElementById('cyclusVolgend').textContent =
+      (klokIsHoog ? 'HW ' : 'LW ') + tijdNL(volgend.t) + ' · ' + volgend.val;
+
+    if (daarna) {
+      document.getElementById('klokDaarnaLabel').textContent =
+        daarna.type === 'hoogwater' ? 'Daarna hoogwater' : 'Daarna laagwater';
+      document.getElementById('klokDaarna').textContent = tijdNL(daarna.t);
+      document.getElementById('klokDaarnaSub').textContent =
+        (daarna.val >= 0 ? '+' : '') + daarna.val + ' cm · ' + dagNL(daarna.t);
+      document.getElementById('klokDaarnaTegel').className =
+        'dtile' + (daarna.type === 'laagwater' ? ' low' : '');
+    }
+
+    document.getElementById('klokLed').classList.add('rx');
+    document.getElementById('klokUpdated').textContent =
+      'waddendata.nl · ' + data.locatie + ' · ' + tijdNL(new Date());
+
+    tikAftelklok();
+  } catch (e) {
+    console.error('vulAftelklok:', e);
+    document.getElementById('klokUpdated').textContent = 'Getijdata tijdelijk niet beschikbaar';
+  }
+}
+
+function tikAftelklok() {
+  if (!klokDoelTijd) return;
+  const over = Math.floor((klokDoelTijd.getTime() - Date.now()) / 1000);
+
+  // Het extreem is gepasseerd, dus opnieuw ophalen en doorschuiven.
+  if (over < 0) { vulAftelklok(); return; }
+
+  const u = Math.floor(over / 3600);
+  const m = Math.floor((over % 3600) / 60);
+  const sec = over % 60;
+  document.getElementById('klokCijfers').textContent =
+    u + ':' + String(m).padStart(2, '0') + ':' + String(sec).padStart(2, '0');
+
+  // Merkteken op de cyclusbalk: waar staan we tussen het vorige en het
+  // volgende extreem.
+  if (klokVorigTijd) {
+    const totaal = klokDoelTijd - klokVorigTijd;
+    const deel = (Date.now() - klokVorigTijd) / totaal;
+    const pct = Math.min(100, Math.max(0, deel * 100));
+    document.getElementById('cyclusNu').style.left = pct.toFixed(1) + '%';
+  }
+}
+setInterval(() => { if (extraGestart) tikAftelklok(); }, 1000);
+
+// ── Golven ────────────────────────────────────────────────────────────────────
+
+async function fetchGolven() {
+  try {
+    const r = await fetch(GOLVEN_URL, { cache: 'no-store' });
+    const d = await r.json();
+    if (!r.ok || d.error) throw new Error(d.error || ('status ' + r.status));
+
+    document.getElementById('golfTitel').textContent = 'Golven — ' + d.zeegat;
+
+    // Een boei die niets meet geeft null terug. Dan blijft het veld leeg,
+    // beter dan een oude waarde tonen alsof hij nu geldt.
+    const cijfer = (v, eenheid) => v == null
+      ? '<b style="color:var(--text-dim)">—</b><span>' + eenheid + '</span>'
+      : '<b>' + v + '</b><span>' + eenheid + '</span>';
+
+    document.getElementById('golfRij').innerHTML = (d.boeien || []).map(b => `
+      <div class="golfkaart ${b.rol === 'zeegat' ? 'zeegat' : ''}">
+        <div class="golf-naam">${b.naam}<small>${b.toelichting || ''}</small></div>
+        <div class="golf-meet">${cijfer(b.hoogteCm, 'H⅓ cm')}</div>
+        <div class="golf-meet max">${cijfer(b.maxCm, 'Hmax cm')}</div>
+        <div class="golf-meet ri">${cijfer(b.richtingGraden == null ? null : b.richtingGraden + '°', 'richting')}</div>
+      </div>`).join('');
+
+    // Verwachting als staafjes, met de huidige meting als eerste staaf.
+    const nuCm = (d.boeien || []).find(b => b.rol === 'zeegat')?.hoogteCm;
+    const punten = [];
+    if (nuCm != null) punten.push({ label: 'nu', cm: nuCm, nu: true });
+    for (const v of d.verwachting || []) punten.push({ label: '+' + v.overUren + 'u', cm: v.hoogteCm });
+
+    const vak = document.getElementById('golfVerwacht');
+    if (punten.length >= 2) {
+      const top = Math.max(...punten.map(p => p.cm), 1);
+      document.getElementById('golfStaven').innerHTML = punten.map(p => `
+        <div class="staaf ${p.nu ? 'nu' : ''}">
+          <div class="staaf-cm">${p.cm}</div>
+          <div class="staaf-balk" style="height:${Math.max(6, Math.round(p.cm / top * 80))}px"></div>
+          <div class="staaf-tijd">${p.label}</div>
+        </div>`).join('');
+      document.getElementById('golfVerwachtKop').textContent =
+        (d.boeien?.[0]?.naam || 'Zeegat') + ', verwachting H⅓';
+      vak.hidden = false;
+    } else {
+      vak.hidden = true;
+    }
+
+    // De watertemperatuur hoort bij de aftelklok, maar komt uit dit eindpunt.
+    if (d.watertemperatuur) {
+      document.getElementById('watertemp').textContent =
+        String(d.watertemperatuur.graden).replace('.', ',');
+      document.getElementById('watertempSub').textContent =
+        '°C · ' + d.watertemperatuur.station;
+    }
+
+    document.getElementById('golfLed').classList.add('rx');
+    const gemeten = d.boeien?.find(b => b.tijdstip)?.tijdstip;
+    document.getElementById('golfUpdated').textContent =
+      'waddendata.nl · gemeten ' + (gemeten ? tijdNL(new Date(gemeten)) : '—');
+
+  } catch (e) {
+    console.error('fetchGolven:', e);
+    document.getElementById('golfUpdated').textContent = 'Golfdata tijdelijk niet beschikbaar';
   }
 }
 
