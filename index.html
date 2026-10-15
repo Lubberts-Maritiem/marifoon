@@ -1025,7 +1025,7 @@
     <div class="dtile" id="dtWaterstand">
       <div class="dtile-label">Waterstand NAP</div>
       <div class="dtile-value" id="tijWaterstand">—</div>
-      <div class="dtile-unit">cm</div>
+      <div class="dtile-unit" id="tijOpzet">cm</div>
     </div>
 
     <div class="dtile" id="dtNextTide">
@@ -1094,11 +1094,10 @@ const CAMERAS = {
     location: 'Terschelling · Havenkom',
   },
   cam2: {
-    // De server 5b8d2cbe62ad6.streamlock.net draait nog, maar de stream
-    // "live/veerkade.stream" bestaat daar niet meer. Elke variant op dat pad
-    // geeft 404, dus hier is een nieuwe URL van de camera-eigenaar nodig.
-    // Zet die hieronder en het beeld doet het weer.
-    url:      null,
+    // De stream is verhuisd. Hij stond op 5b8d2cbe62ad6.streamlock.net, maar
+    // draait nu op 565c3c746b763, het pad erna is hetzelfde gebleven.
+    // Bron: webcam-brandaris.nl/pages/cameras/veerkade.php
+    url:      'https://565c3c746b763.streamlock.net/live-cam/veerkade.stream/playlist.m3u8',
     name:     'CAM 2 — Veerkade',
     location: 'Terschelling · Veerkade',
   }
@@ -1554,7 +1553,9 @@ async function fetchGetijden() {
 
     // Actueel gemeten stand. Mag ontbreken, dan tonen we alleen de tafel.
     const stand = data.actueel
-      ? { peil: data.actueel.waardeCm, tijd: new Date(data.actueel.tijdstip) }
+      ? { peil: data.actueel.waardeCm,
+          tijd: new Date(data.actueel.tijdstip),
+          opzet: data.actueel.afwijkingCm }
       : null;
 
     // Extremen van vandaag tot en met overmorgen, in de vorm die
@@ -1575,12 +1576,18 @@ async function fetchGetijden() {
     const peilEl = document.getElementById('tijWaterstand');
     const tijdEl = document.getElementById('tijMeettijd');
     const wsEl   = document.getElementById('dtWaterstand');
+    const opzetEl = document.getElementById('tijOpzet');
     if (stand) {
       peilEl.textContent = (stand.peil >= 0 ? '+' : '') + stand.peil;
+      // Het verschil met het astronomische getij, de opzet door wind en
+      // luchtdruk. Dat is de kolom "afw" op waddendata.nl.
+      opzetEl.textContent = stand.opzet == null
+        ? 'cm'
+        : 'cm · opzet ' + (stand.opzet >= 0 ? '+' : '') + stand.opzet;
       tijdEl.textContent = stand.tijd.toLocaleTimeString('nl-NL', { hour:'2-digit', minute:'2-digit', timeZone:'Europe/Amsterdam' });
       wsEl.className     = 'dtile' + (stand.peil < -40 ? ' low' : '');
     } else {
-      peilEl.textContent = '—'; tijdEl.textContent = '—';
+      peilEl.textContent = '—'; tijdEl.textContent = '—'; opzetEl.textContent = 'cm';
     }
 
     renderGetijden(rows, stand);
