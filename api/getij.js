@@ -29,10 +29,10 @@
 //     correcte absolute tijd, new Date() rekent dat vanzelf om.
 //   - Node 22 heeft een ingebouwde WebSocket, er is dus geen "ws"-pakket nodig.
 
+import { haalWaddendata, tekstNaarDate, nlNaarDate } from "./_waddendata.js";
+
 const RWS_URL =
   "https://ddapi20-waterwebservices.rijkswaterstaat.nl/ONLINEWAARNEMINGENSERVICES/OphalenWaarnemingen";
-
-const WADDENDATA_WS = "wss://data.waddendata.nl";
 
 const WATERINFO_URL =
   "https://waterinfo.rws.nl/api/chart/get?mapType=waterhoogte&locationCodes=";
@@ -63,11 +63,6 @@ const LOCATIES = {
 // bij elke paginaload opnieuw bij de bronnen te bevragen.
 const cache = {}; // { [locatieKey]: { data, fetchedAt } }
 const CACHE_TTL_MS = 10 * 60 * 1000; // 10 minuten
-
-// De waddendata-boodschap bevat alle locaties tegelijk, dus die cachen we
-// apart. Eén websocketverbinding bedient zo elke locatie.
-let waddenCache = null; // { bericht, fetchedAt }
-const WADDEN_TTL_MS = 10 * 60 * 1000;
 
 export default async function handler(req, res) {
   const locatieKey = (req.query?.locatie || "texel").toLowerCase();
@@ -221,52 +216,6 @@ export default async function handler(req, res) {
 }
 
 // ── Waddendata ───────────────────────────────────────────────────────────────
-
-function haalWaddendata() {
-  const nu = Date.now();
-  if (waddenCache && nu - waddenCache.fetchedAt < WADDEN_TTL_MS) {
-    return Promise.resolve(waddenCache.bericht);
-  }
-
-  // De server stuurt zijn volledige momentopname direct na het verbinden. We
-  // hebben aan die eerste boodschap genoeg en sluiten daarna meteen.
-  return new Promise((resolve, reject) => {
-    let ws;
-    let klaar = false;
-
-    const stop = (fn, arg) => {
-      if (klaar) return;
-      klaar = true;
-      clearTimeout(timer);
-      try { ws?.close(); } catch { /* al dicht */ }
-      fn(arg);
-    };
-
-    const timer = setTimeout(
-      () => stop(reject, new Error("waddendata gaf geen antwoord binnen 8 seconden")),
-      8000
-    );
-
-    try {
-      ws = new WebSocket(WADDENDATA_WS, { headers: { Origin: "https://www.waddendata.nl" } });
-    } catch (e) {
-      return stop(reject, e);
-    }
-
-    ws.onmessage = (ev) => {
-      try {
-        const data = JSON.parse(typeof ev.data === "string" ? ev.data : String(ev.data));
-        if (!data?.Tides) throw new Error("geen Tides in de boodschap");
-        waddenCache = { bericht: data, fetchedAt: Date.now() };
-        stop(resolve, data);
-      } catch (e) {
-        stop(reject, e);
-      }
-    };
-    ws.onerror = () => stop(reject, new Error("websocketfout bij waddendata"));
-    ws.onclose = () => stop(reject, new Error("waddendata sloot de verbinding zonder data"));
-  });
-}
 
 function leesWaddenExtremen(tides, waddenKey) {
   // Tides[locatie] is [ [regiocode, stationcode], [ extreem, extreem, ... ] ].
@@ -492,39 +441,6 @@ async function haalMetingen(code, aquoMetadata, periode) {
 function toRwsTijd(date) {
   // RWS accepteert gewoon UTC met een "+00:00"-suffix en rekent zelf om.
   return date.toISOString().replace("Z", "+00:00");
-}
-
-// ── Tijd ─────────────────────────────────────────────────────────────────────
-
-function tekstNaarDate(tekst) {
-  // "2026-10-16 00:40", Nederlandse kloktijd zonder offset.
-  const m = String(tekst).match(/^(\d{4})-(\d{2})-(\d{2})[ T](\d{1,2}):(\d{2})/);
-  if (!m) return null;
-  return nlNaarDate(+m[1], +m[2], +m[3], +m[4], +m[5]);
-}
-
-function nlNaarDate(jaar, maand, dag, uur, minuut) {
-  // Zonder library bepalen we de offset door een eerste gok terug te rekenen
-  // via Intl, en die correctie toe te passen. Tweemaal, zodat ook de nacht van
-  // de klokwissel klopt.
-  let ms = Date.UTC(jaar, maand - 1, dag, uur, minuut);
-  for (let ronde = 0; ronde < 2; ronde++) {
-    ms = Date.UTC(jaar, maand - 1, dag, uur, minuut) - nlOffset(new Date(ms));
-  }
-  return new Date(ms);
-}
-
-function nlOffset(datum) {
-  const fmt = new Intl.DateTimeFormat("en-US", {
-    timeZone: "Europe/Amsterdam",
-    hour12: false,
-    year: "numeric", month: "2-digit", day: "2-digit",
-    hour: "2-digit", minute: "2-digit", second: "2-digit",
-  });
-  const d = {};
-  for (const deel of fmt.formatToParts(datum)) d[deel.type] = deel.value;
-  const alsUtc = Date.UTC(d.year, d.month - 1, d.day, d.hour % 24, d.minute, d.second);
-  return alsUtc - datum.getTime();
 }
 
 export { LOCATIES };
