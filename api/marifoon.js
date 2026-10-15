@@ -93,7 +93,9 @@ function sectieTekst(html, kopRegex) {
   const pRe = /<p[^>]*>([\s\S]*?)<\/p>/gi;
   let m;
   while ((m = pRe.exec(blok))) {
-    const tekst = decodeEntities(m[1].replace(/<br\s*\/?>/gi, " ").replace(/<[^>]+>/g, " ").replace(/\s+/g, " "));
+    const tekst = decodeEntities(
+      m[1].replace(/<br\s*\/?>/gi, " ").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ")
+    );
     if (tekst) regels.push(tekst);
   }
   return regels.length ? regels.join(" ") : null;
