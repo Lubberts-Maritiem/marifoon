@@ -338,19 +338,6 @@
     display: block;
   }
 
-  /* CRT scanlines */
-  .camera-viewport::after {
-    content: '';
-    position: absolute; inset: 0;
-    background: repeating-linear-gradient(
-      0deg,
-      transparent, transparent 2px,
-      rgba(0,0,0,0.07) 2px, rgba(0,0,0,0.07) 4px
-    );
-    pointer-events: none;
-    z-index: 2;
-  }
-
   /* Corner brackets */
   .cam-corner { position: absolute; width: 20px; height: 20px; z-index: 3; pointer-events: none; }
   .cam-corner.tl { top: 12px;    left: 12px;  border-top: 2px solid var(--accent); border-left:  2px solid var(--accent); }
@@ -1100,12 +1087,18 @@ const SCAN_CHANNELS = [
 
 const CAMERAS = {
   cam1: {
-    url:      'https://584b389d712f9.streamlock.net/live-cam/havenkom-ts/playlist.m3u8?wowzatokenendtime=1778523889&wowzatokenhash=q0vYSOilqvaYyLz1cLGlqF4kwgzOO2FPcQbyXhyMnm4=&wowzatokenstarttime=1778522029',
+    // De wowzatoken in de oude URL verliep op 11 mei 2026. Deze server vraagt
+    // er niet om, zonder token geeft hij gewoon een geldige playlist terug.
+    url:      'https://584b389d712f9.streamlock.net/live-cam/havenkom-ts/playlist.m3u8',
     name:     'CAM 1 — Havenkom',
     location: 'Terschelling · Havenkom',
   },
   cam2: {
-    url:      'https://5b8d2cbe62ad6.streamlock.net/live/veerkade.stream/playlist.m3u8?wowzatokenendtime=1778525745&wowzatokenhash=I7xqmNNsEObakNLCs_EodQ471UgHSF1w1XbxDIvy_EE=&wowzatokenstarttime=1778522085',
+    // De server 5b8d2cbe62ad6.streamlock.net draait nog, maar de stream
+    // "live/veerkade.stream" bestaat daar niet meer. Elke variant op dat pad
+    // geeft 404, dus hier is een nieuwe URL van de camera-eigenaar nodig.
+    // Zet die hieronder en het beeld doet het weer.
+    url:      null,
     name:     'CAM 2 — Veerkade',
     location: 'Terschelling · Veerkade',
   }
@@ -1201,6 +1194,13 @@ function startCameraSlot(key, videoEl, loadingEl, loadingTextEl) {
   loadingTextEl.textContent = 'Stream verbinden…';
   loadingEl.classList.remove('hidden');
 
+  // Geen URL ingesteld, bijvoorbeeld omdat de stream is verhuisd. Dan blijft
+  // het slot staan met een duidelijke melding in plaats van eindeloos laden.
+  if (!cam.url) {
+    loadingTextEl.textContent = 'Geen stream ingesteld';
+    return;
+  }
+
   if (hlsInstances[key]) { hlsInstances[key].destroy(); delete hlsInstances[key]; }
 
   if (typeof Hls !== 'undefined' && Hls.isSupported()) {
@@ -1212,7 +1212,14 @@ function startCameraSlot(key, videoEl, loadingEl, loadingTextEl) {
       loadingEl.classList.add('hidden');
     });
     hls.on(Hls.Events.ERROR, (ev, data) => {
-      if (data.fatal) loadingTextEl.textContent = 'Stream tijdelijk niet beschikbaar';
+      if (!data.fatal) return;
+      // Een 404 op de playlist betekent dat de stream weg is, niet dat het
+      // netwerk hapert. Dat onderscheid scheelt zoeken op de verkeerde plek.
+      const weg = data.response && data.response.code === 404;
+      loadingTextEl.textContent = weg
+        ? 'Stream bestaat niet meer'
+        : 'Stream tijdelijk niet beschikbaar';
+      loadingEl.classList.remove('hidden');
     });
     hlsInstances[key] = hls;
   } else if (videoEl.canPlayType('application/vnd.apple.mpegurl')) {
@@ -1554,7 +1561,7 @@ async function fetchGetijden() {
     // renderGetijden verwacht.
     const now      = new Date();
     const dayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const dayEnd   = new Date(dayStart); dayEnd.setDate(dayEnd.getDate() + 3);
+    const dayEnd   = new Date(dayStart); dayEnd.setDate(dayEnd.getDate() + 4);
 
     const rows = (data.extremen || [])
       .map(e => ({
@@ -1578,9 +1585,11 @@ async function fetchGetijden() {
 
     renderGetijden(rows, stand);
     document.getElementById('tijLed').classList.add('rx');
-    const bron = data.bron && data.bron.verwacht
-      ? 'Rijkswaterstaat, verwacht getij inclusief opzet'
-      : 'Rijkswaterstaat, astronomisch getij';
+    const bron = data.bronNaam === 'waddendata'
+      ? 'waddendata.nl, verwacht getij inclusief opzet'
+      : data.bron && data.bron.verwacht
+        ? 'Rijkswaterstaat, verwacht getij inclusief opzet'
+        : 'Rijkswaterstaat, astronomisch getij';
     document.getElementById('tijUpdated').textContent =
       bron + ' · ' + data.locatie + ' · ' +
       new Date().toLocaleTimeString('nl-NL', { hour:'2-digit', minute:'2-digit' });
