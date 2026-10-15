@@ -40,18 +40,23 @@ const WATERINFO_URL =
 // "code" is de RWS-locatiecode, "wadden" de sleutel in Tides van waddendata.
 // Waar "wadden" ontbreekt voert waddendata die locatie niet en vallen we terug
 // op de verwachtingsreeks van waterinfo.
+// "code" is de RWS-locatiecode, "wadden" de sleutel in Tides van waddendata,
+// "stand" het station in hun waterstandentabel: [regio, stationcode].
+// Waar "wadden" ontbreekt voert waddendata geen getijtafel voor die plaats en
+// vallen we terug op de verwachtingsreeks van waterinfo. De waterstandentabel
+// dekt wel alle elf locaties.
 const LOCATIES = {
-  denhelder: { label: "Den Helder", code: "denhelder.marsdiep", wadden: "Den Helder" },
-  denoever: { label: "Den Oever", code: "denoever.waddenzee.voorhaven" },
-  texel: { label: "Texel", code: "texel.oudeschild" },
-  harlingen: { label: "Harlingen", code: "harlingen.waddenzee", wadden: "Harlingen" },
-  vlieland: { label: "Vlieland", code: "vlieland.haven", wadden: "Vlieland" },
-  terschelling: { label: "West-Terschelling", code: "terschelling.west", wadden: "West-Terschelling" },
-  ameland: { label: "Ameland", code: "ameland.nes", wadden: "Nes Ameland" },
-  holwerd: { label: "Holwerd", code: "holwerd.veersteiger", wadden: "Holwerd" },
-  schiermonnikoog: { label: "Schiermonnikoog", code: "schiermonnikoog.waddenzee" },
-  lauwersoog: { label: "Lauwersoog", code: "lauwersoog.waddenzee", wadden: "Lauwersoog" },
-  delfzijl: { label: "Delfzijl", code: "delfzijl", wadden: "Delfzijl" },
+  denhelder: { label: "Den Helder", code: "denhelder.marsdiep", wadden: "Den Helder", stand: ["west", "DENH"] },
+  denoever: { label: "Den Oever", code: "denoever.waddenzee.voorhaven", stand: ["west", "OEBU"] },
+  texel: { label: "Texel", code: "texel.oudeschild", stand: ["west", "OUDE"] },
+  harlingen: { label: "Harlingen", code: "harlingen.waddenzee", wadden: "Harlingen", stand: ["west", "HARL"] },
+  vlieland: { label: "Vlieland", code: "vlieland.haven", wadden: "Vlieland", stand: ["west", "VLIE"] },
+  terschelling: { label: "West-Terschelling", code: "terschelling.west", wadden: "West-Terschelling", stand: ["west", "WTER"] },
+  ameland: { label: "Ameland", code: "ameland.nes", wadden: "Nes Ameland", stand: ["west", "NESS"] },
+  holwerd: { label: "Holwerd", code: "holwerd.veersteiger", wadden: "Holwerd", stand: ["oost", "HOLW"] },
+  schiermonnikoog: { label: "Schiermonnikoog", code: "schiermonnikoog.waddenzee", stand: ["oost", "SCHI"] },
+  lauwersoog: { label: "Lauwersoog", code: "lauwersoog.waddenzee", wadden: "Lauwersoog", stand: ["oost", "LAUW"] },
+  delfzijl: { label: "Delfzijl", code: "delfzijl", wadden: "Delfzijl", stand: ["oost", "DLFZ"] },
 };
 
 // In-memory cache per locatie: getij verandert traag, geen reden om
@@ -61,7 +66,7 @@ const CACHE_TTL_MS = 10 * 60 * 1000; // 10 minuten
 
 // De waddendata-boodschap bevat alle locaties tegelijk, dus die cachen we
 // apart. Eén websocketverbinding bedient zo elke locatie.
-let waddenCache = null; // { tides, fetchedAt }
+let waddenCache = null; // { bericht, fetchedAt }
 const WADDEN_TTL_MS = 10 * 60 * 1000;
 
 export default async function handler(req, res) {
@@ -110,12 +115,10 @@ export default async function handler(req, res) {
         { Grootheid: { Code: "WATHTE" }, Hoedanigheid: { Code: "NAP" } },
         periodeStand
       ).catch(() => []), // gemeten stand is nice-to-have, mag falen
-      locatie.wadden
-        ? haalWaddendata().catch((e) => {
-            console.warn("Waddendata niet beschikbaar:", e.message);
-            return null;
-          })
-        : Promise.resolve(null),
+      haalWaddendata().catch((e) => {
+        console.warn("Waddendata niet beschikbaar:", e.message);
+        return null;
+      }),
     ]);
 
     // Hoogtes per tijdstip, zodat we ze aan het juiste extreem kunnen koppelen.
@@ -141,7 +144,8 @@ export default async function handler(req, res) {
     // De verwachting eroverheen leggen. Waddendata heeft voorrang, want dat is
     // de bron waar de cijfers mee moeten overeenkomen.
     let bronNaam = "astronomisch";
-    const waddenExtremen = waddenTides ? leesWaddenExtremen(waddenTides, locatie.wadden) : [];
+    const waddenExtremen =
+      waddenTides && locatie.wadden ? leesWaddenExtremen(waddenTides.Tides, locatie.wadden) : [];
 
     if (waddenExtremen.length) {
       voegVerwachtingSamen(extremen, waddenExtremen);
@@ -162,14 +166,24 @@ export default async function handler(req, res) {
     const volgendLaagwater = toekomstig.find((m) => m.type === "laagwater") || null;
     const volgendHoogwater = toekomstig.find((m) => m.type === "hoogwater") || null;
 
-    // Laatste geldige meting van de actuele stand.
-    let actueel = null;
-    for (let i = standen.length - 1; i >= 0; i--) {
-      const w = standen[i]?.Meetwaarde?.Waarde_Numeriek;
-      // RWS gebruikt 999999999 als "geen waarde".
-      if (typeof w === "number" && Math.abs(w) < 10000 && standen[i].Tijdstip) {
-        actueel = { tijdstip: standen[i].Tijdstip, waardeCm: Math.round(w) };
-        break;
+    // Actuele stand. Waddendata eerst, zodat het getal op het scherm hetzelfde
+    // is als in hun waterstandentabel. Staat daar niets, dan de meting van RWS.
+    let actueel = leesWaddenStand(waddenTides, locatie.stand);
+
+    if (!actueel) {
+      for (let i = standen.length - 1; i >= 0; i--) {
+        const w = standen[i]?.Meetwaarde?.Waarde_Numeriek;
+        // RWS gebruikt 999999999 als "geen waarde".
+        if (typeof w === "number" && Math.abs(w) < 10000 && standen[i].Tijdstip) {
+          actueel = {
+            tijdstip: standen[i].Tijdstip,
+            waardeCm: Math.round(w),
+            astronomischCm: null,
+            afwijkingCm: null,
+            bron: "rws",
+          };
+          break;
+        }
       }
     }
 
@@ -211,7 +225,7 @@ export default async function handler(req, res) {
 function haalWaddendata() {
   const nu = Date.now();
   if (waddenCache && nu - waddenCache.fetchedAt < WADDEN_TTL_MS) {
-    return Promise.resolve(waddenCache.tides);
+    return Promise.resolve(waddenCache.bericht);
   }
 
   // De server stuurt zijn volledige momentopname direct na het verbinden. We
@@ -243,8 +257,8 @@ function haalWaddendata() {
       try {
         const data = JSON.parse(typeof ev.data === "string" ? ev.data : String(ev.data));
         if (!data?.Tides) throw new Error("geen Tides in de boodschap");
-        waddenCache = { tides: data.Tides, fetchedAt: Date.now() };
-        stop(resolve, data.Tides);
+        waddenCache = { bericht: data, fetchedAt: Date.now() };
+        stop(resolve, data);
       } catch (e) {
         stop(reject, e);
       }
@@ -280,6 +294,38 @@ function leesWaddenExtremen(tides, waddenKey) {
     });
   }
   return uit.sort((a, b) => a.tijdstipMs - b.tijdstipMs);
+}
+
+function leesWaddenStand(bericht, stand) {
+  // waterstanden[regio][station].H1 is de gemeten stand, met daarnaast
+  // WaterstandenAstroPredict[regio][station] de astronomische waarde op datzelfde
+  // moment. Het verschil tussen die twee is de opzet, de kolom "afw" op hun site.
+  if (!bericht || !stand) return null;
+  const [regio, code] = stand;
+
+  const h1 = bericht.waterstanden?.[regio]?.[code]?.H1;
+  if (!h1) return null;
+
+  // Een station zonder meting geeft "--" terug in plaats van een getal.
+  const waarde = Number(h1.value);
+  if (h1.value === "--" || h1.value == null || !Number.isFinite(waarde)) return null;
+
+  const astroRuw = bericht.WaterstandenAstroPredict?.[regio]?.[code]?.value;
+  const astro = Number(astroRuw);
+  const astronomischCm = Number.isFinite(astro) && astroRuw !== "--" ? Math.round(astro) : null;
+
+  const tijdstip = h1.unix_timestamp
+    ? new Date(Number(h1.unix_timestamp) * 1000).toISOString()
+    : tekstNaarDate(h1.timestamp)?.toISOString() || null;
+  if (!tijdstip) return null;
+
+  return {
+    tijdstip,
+    waardeCm: Math.round(waarde),
+    astronomischCm,
+    afwijkingCm: astronomischCm == null ? null : Math.round(waarde) - astronomischCm,
+    bron: "waddendata",
+  };
 }
 
 function vulAanMetWadden(extremen, verwacht) {
