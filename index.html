@@ -4,12 +4,15 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Lubberts Maritiem — Terschelling VHF &amp; Camera</title>
-<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Barlow+Condensed:wght@300;400;600&family=Cinzel:wght@400;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Barlow+Condensed:wght@300;400;500;600;700&family=Cinzel:wght@400;600&family=Barlow:wght@400;500;600&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+<meta name="theme-color" content="#0A1016">
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
   :root {
+    /* Oude variabelen: alleen nog gebruikt door de opstartanimatie, die
+       ongewijzigd moet blijven. Niet aanpassen. */
     --bg:       #0d0f12;
     --panel:    #141820;
     --rim:      #1e2430;
@@ -23,406 +26,122 @@
     --led-off:  #1a1f28;
     --led-pwr:  #e8a020;
     --led-rx:   #27ae60;
+
+    /* Redesign: brugdashboard, dagmodus (donker) */
+    --lm-bg:          #0A1016;
+    --lm-kop:         #0D141B;
+    --lm-vlak:        #111922;
+    --lm-vlak-2:      #16212C;
+    --lm-vlak-3:      #24323F;
+    --lm-rand:        #22303D;
+    --lm-rand-2:      #2E3E4D;
+    --lm-segment:     #2A3947;
+    --lm-tekst:       #E9EFF5;
+    --lm-tekst-2:     #C9D3DD;
+    --lm-label:       #A3B1BF;
+    --lm-dim:         #8C9BAA;
+    --lm-accent:      #F2A93B;
+    --lm-accent-bg:   #2A2112;
+    --lm-accent-tekst:#FFE3B8;
+    --lm-op-accent:   #1A1206;
+    --lm-zee:         #5CC8E8;
+    --lm-zee-bg:      #0F2430;
+    --lm-zee-rand:    #2A5568;
+    --lm-zee-tekst:   #9ADCF0;
+    --lm-live:        #46D98E;
+    --lm-live-bg:     #10261C;
+    --lm-warn:        #FF8F82;
+    --lm-warn-icoon:  #FF7A6B;
+    --lm-warn-tekst:  #FFC9C2;
+    --lm-warn-sterk:  #FFD9D3;
+    --lm-warn-bg:     #2B1513;
+    --lm-warn-rand:   #6B2A24;
+    --lm-kaart-bg:    #0C1822;
+    --lm-cam-bg:      #1A2632;
+    --lm-led-uit:     #5B6B7B;
   }
+
+  /* Nachtmodus: rood op zwart, houdt het nachtzicht intact */
+  html[data-thema="nacht"] {
+    --lm-bg:          #000000;
+    --lm-kop:         #000000;
+    --lm-vlak:        #120605;
+    --lm-vlak-2:      #1A0807;
+    --lm-vlak-3:      #2A0C08;
+    --lm-rand:        #3A1410;
+    --lm-rand-2:      #4A1A14;
+    --lm-segment:     #2A0C08;
+    --lm-tekst:       #FF6A55;
+    --lm-tekst-2:     #FF6A55;
+    --lm-label:       #D9483B;
+    --lm-dim:         #D9483B;
+    --lm-accent:      #FF6A55;
+    --lm-accent-bg:   #2A0C08;
+    --lm-accent-tekst:#FF8A78;
+    --lm-op-accent:   #000000;
+    --lm-zee:         #FF6A55;
+    --lm-zee-bg:      #2A0C08;
+    --lm-zee-rand:    #4A1A14;
+    --lm-zee-tekst:   #FF8A78;
+    --lm-live:        #FF6A55;
+    --lm-live-bg:     #2A0C08;
+    --lm-warn:        #FF8A78;
+    --lm-warn-icoon:  #FF8A78;
+    --lm-warn-tekst:  #FF8A78;
+    --lm-warn-sterk:  #FF8A78;
+    --lm-warn-bg:     #1A0807;
+    --lm-warn-rand:   #FF6A55;
+    --lm-kaart-bg:    #000000;
+    --lm-cam-bg:      #120605;
+    --lm-led-uit:     #5A1E16;
+  }
+  html[data-thema="nacht"] .kanaal.active { background: #3A1410; }
+  html[data-thema="nacht"] .cam-beeld video,
+  html[data-thema="nacht"] .ais-kaart iframe {
+    filter: grayscale(1) sepia(1) saturate(6) hue-rotate(-40deg) brightness(0.55);
+  }
+
+  [hidden] { display: none !important; }
+
+  html { scroll-behavior: smooth; scroll-padding-top: 16px; }
 
   body {
-    background: var(--bg);
-    color: var(--text);
-    font-family: 'Barlow Condensed', sans-serif;
+    background: var(--lm-bg);
+    color: var(--lm-tekst);
+    font-family: 'Barlow', system-ui, sans-serif;
+    font-size: 15px;
+    line-height: 1.45;
     min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding: 20px;
     user-select: none;
+    -webkit-font-smoothing: antialiased;
   }
 
-  /* ── Header ── */
-  header {
-    width: 100%;
-    max-width: 1200px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 16px;
-    padding: 0 4px;
+  a { color: var(--lm-accent); }
+  button { font: inherit; cursor: pointer; }
+  :focus-visible { outline: 2px solid var(--lm-accent); outline-offset: 2px; }
+
+  .mono, .dtile-value, .klok-cijfers, .kanaal-nr, .vhf-kanaal, .kenter b, .golf-meet b, .staaf-cm, .tij-table td:nth-child(2), .tij-table td:nth-child(4) {
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-variant-numeric: tabular-nums;
   }
 
-  .brand {
-    font-family: 'Cinzel', serif;
-    font-size: 13px;
-    letter-spacing: 3px;
-    color: var(--accent);
-    text-transform: uppercase;
-  }
-
-  .utc-clock {
-    font-family: 'Orbitron', monospace;
-    font-size: 14px;
-    color: var(--text-dim);
-    letter-spacing: 2px;
-  }
-
-  /* ── Shared panel shell ── */
-  .panel {
-    width: 100%;
-    max-width: 1200px;
-    background: var(--panel);
-    border: 1px solid var(--rim);
-    border-radius: 12px;
-    box-shadow:
-      0 0 0 1px #0a0c10,
-      0 8px 40px rgba(0,0,0,0.6),
-      inset 0 1px 0 rgba(255,255,255,0.04);
-    padding: 24px;
-    margin-bottom: 20px;
-  }
-
-  /* ── Display row (channel number + scanner) ── */
-  .display-block {
-    background: #080b0e;
-    border: 1px solid #0f1318;
-    border-radius: 8px;
-    padding: 18px 24px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    box-shadow: inset 0 2px 8px rgba(0,0,0,0.5);
-    margin-bottom: 16px;
-  }
-
-  /* Channel number left */
-  .ch-left { display: flex; flex-direction: column; }
-
-  .channel-label-small {
-    font-size: 10px;
-    letter-spacing: 4px;
-    color: var(--text-dim);
-    text-transform: uppercase;
-    margin-bottom: 4px;
-  }
-
-  .channel-number {
-    font-family: 'Orbitron', monospace;
-    font-size: 72px;
-    font-weight: 900;
-    line-height: 1;
-    color: var(--accent);
-    text-shadow: 0 0 20px var(--accent), 0 0 60px rgba(232,160,32,0.25);
-    letter-spacing: -2px;
-  }
-
-  .channel-name {
-    font-size: 13px;
-    letter-spacing: 2px;
-    color: var(--text-dim);
-    margin-top: 6px;
-    text-transform: uppercase;
-  }
-
-  .led-row {
-    display: flex;
-    gap: 12px;
-    margin-top: 10px;
-  }
-
-  .led-item {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    font-size: 10px;
-    letter-spacing: 2px;
-    color: var(--text-dim);
-    text-transform: uppercase;
-  }
-
-  .led {
-    width: 8px; height: 8px;
-    border-radius: 50%;
-    background: var(--led-off);
-    transition: background 0.15s, box-shadow 0.15s;
-  }
-  .led.pwr { background: var(--led-pwr); box-shadow: 0 0 6px var(--led-pwr); }
-  .led.rx  { background: var(--led-rx);  box-shadow: 0 0 6px var(--led-rx); }
-
-
-  /* ── Scan display (rechts in display-block) ── */
-  .scan-display {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-    gap: 0;
-  }
-
-  .scan-display-label {
-    font-size: 10px;
-    letter-spacing: 4px;
-    color: var(--text-dim);
-    text-transform: uppercase;
-    margin-bottom: 8px;
-    text-align: right;
-  }
-
-  /* Het venster dat de kanaallijst toont — 5 kanalen zichtbaar */
-  .scan-window {
-    position: relative;
-    width: 220px;
-    height: 130px;
-    overflow: hidden;
-    background: #050709;
-    border: 1px solid #0f1318;
-    border-radius: 6px;
-    box-shadow: inset 0 2px 8px rgba(0,0,0,0.6);
-  }
-
-  /* Vervaag boven- en onderkant */
-  .scan-window::before,
-  .scan-window::after {
-    content: '';
-    position: absolute;
-    left: 0; right: 0;
-    height: 32px;
-    z-index: 2;
-    pointer-events: none;
-  }
-  .scan-window::before {
-    top: 0;
-    background: linear-gradient(to bottom, #050709 0%, transparent 100%);
-  }
-  .scan-window::after {
-    bottom: 0;
-    background: linear-gradient(to top, #050709 0%, transparent 100%);
-  }
-
-  /* Actieve kanaal highlight-balk in het midden */
-  .scan-cursor {
-    position: absolute;
-    top: 50%; left: 0; right: 0;
-    transform: translateY(-50%);
-    height: 26px;
-    background: rgba(232,160,32,0.08);
-    border-top: 1px solid rgba(232,160,32,0.25);
-    border-bottom: 1px solid rgba(232,160,32,0.25);
-    z-index: 1;
-    pointer-events: none;
-  }
-
-  /* Scrollende kanalenlijst */
-  .scan-list {
-    position: absolute;
-    top: 0; left: 0; right: 0;
-    transition: transform 0.45s cubic-bezier(0.4, 0, 0.2, 1);
-  }
-
-  .scan-item {
-    height: 26px;
-    display: flex;
-    align-items: center;
-    padding: 0 12px;
-    gap: 10px;
-    font-family: 'Orbitron', monospace;
-  }
-
-  .scan-item-ch {
-    font-size: 13px;
-    font-weight: 700;
-    letter-spacing: 1px;
-    color: var(--text-dim);
-    min-width: 24px;
-    transition: color 0.3s, text-shadow 0.3s;
-  }
-
-  .scan-item-name {
+  .kop {
     font-family: 'Barlow Condensed', sans-serif;
-    font-size: 10px;
-    letter-spacing: 1.5px;
-    color: var(--text-dim);
+    font-size: 20px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
     text-transform: uppercase;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    transition: color 0.3s;
+    color: var(--lm-tekst);
+    line-height: 1.2;
   }
 
-  .scan-item.active .scan-item-ch {
-    color: var(--accent);
-    text-shadow: 0 0 10px var(--accent);
-  }
-
-  .scan-item.active .scan-item-name {
-    color: rgba(232,160,32,0.75);
-  }
-
-  /* Scan status badge onder het venster */
-  .scan-status-badge {
-    margin-top: 6px;
-    font-family: 'Orbitron', monospace;
-    font-size: 9px;
-    letter-spacing: 3px;
-    color: var(--text-dim);
-    text-transform: uppercase;
-    text-align: right;
-  }
-  .scan-status-badge.active {
-    color: var(--accent);
-    animation: blink 0.8s infinite;
-  }
-
-
-  /* ── Camera panel ── */
-  .camera-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 16px;
-  }
-
-  .camera-title {
-    font-family: 'Cinzel', serif;
-    font-size: 12px;
-    letter-spacing: 4px;
-    color: var(--accent);
-    text-transform: uppercase;
-  }
-
-  .camera-controls {
-    display: flex;
-    align-items: center;
-    gap: 14px;
-  }
-
-  .cam-live-badge {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    font-size: 10px;
-    letter-spacing: 2px;
-    color: var(--text-dim);
-    text-transform: uppercase;
-  }
-
-  /* Twee camera's naast elkaar */
-  .camera-dual {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 16px;
-  }
-
-  @media (max-width: 640px) {
-    .camera-dual { grid-template-columns: 1fr; }
-  }
-
-  .camera-slot-label {
-    font-size: 9px;
-    letter-spacing: 3px;
-    color: var(--text-dim);
-    text-transform: uppercase;
-    margin-bottom: 8px;
-  }
-
-  /* Camera viewport */
-  .camera-viewport {
-    position: relative;
-    width: 100%;
-    aspect-ratio: 16/9;
-    background: #040608;
-    border-radius: 8px;
-    border: 1px solid #0f1318;
-    overflow: hidden;
-    box-shadow: inset 0 2px 8px rgba(0,0,0,0.5);
-  }
-
-  .camera-viewport video {
-    width: 100%; height: 100%;
-    object-fit: cover;
-    display: block;
-  }
-
-  /* Corner brackets */
-  .cam-corner { position: absolute; width: 20px; height: 20px; z-index: 3; pointer-events: none; }
-  .cam-corner.tl { top: 12px;    left: 12px;  border-top: 2px solid var(--accent); border-left:  2px solid var(--accent); }
-  .cam-corner.tr { top: 12px;    right: 12px; border-top: 2px solid var(--accent); border-right: 2px solid var(--accent); }
-  .cam-corner.bl { bottom: 12px; left: 12px;  border-bottom: 2px solid var(--accent); border-left:  2px solid var(--accent); }
-  .cam-corner.br { bottom: 12px; right: 12px; border-bottom: 2px solid var(--accent); border-right: 2px solid var(--accent); }
-
-  /* Overlay badges */
-  .cam-overlay-top {
-    position: absolute;
-    top: 14px; left: 50%;
-    transform: translateX(-50%);
-    z-index: 4;
-    display: flex; align-items: center; gap: 8px;
-    pointer-events: none;
-  }
-
-  .cam-rec-dot {
-    width: 8px; height: 8px;
-    border-radius: 50%;
-    background: var(--red);
-    box-shadow: 0 0 6px var(--red);
-    animation: blink 1.2s infinite;
-  }
-
-  .cam-name-badge {
-    font-family: 'Orbitron', monospace;
-    font-size: 11px;
-    letter-spacing: 3px;
-    color: var(--accent);
-    background: rgba(8,11,14,0.78);
-    padding: 4px 10px;
-    border-radius: 3px;
-    border: 1px solid rgba(232,160,32,0.28);
-    text-transform: uppercase;
-  }
-
-  .cam-overlay-bottom {
-    position: absolute;
-    bottom: 12px; left: 16px; right: 16px;
-    z-index: 4;
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-end;
-    pointer-events: none;
-  }
-
-  .cam-location {
-    font-size: 11px;
-    letter-spacing: 2px;
-    color: rgba(176,190,197,0.65);
-    text-transform: uppercase;
-  }
-
-  .cam-timestamp {
-    font-family: 'Orbitron', monospace;
-    font-size: 10px;
-    color: rgba(232,160,32,0.55);
-    letter-spacing: 1px;
-  }
-
-  /* Loading state */
-  .cam-loading {
-    position: absolute; inset: 0;
-    display: flex; flex-direction: column;
-    align-items: center; justify-content: center;
-    gap: 12px;
-    z-index: 5;
-    background: #040608;
-    transition: opacity 0.4s;
-  }
-  .cam-loading.hidden { opacity: 0; pointer-events: none; }
-
-  .cam-loading-icon {
-    font-family: 'Orbitron', monospace;
-    font-size: 36px;
-    color: var(--text-dim);
-    animation: pulse 1.4s infinite;
-  }
-
-  .cam-loading-text {
-    font-size: 11px;
-    letter-spacing: 3px;
-    color: var(--text-dim);
-    text-transform: uppercase;
+  /* ── Opstartanimatie: geërfde eigenschappen vastzetten zodat hij exact
+       hetzelfde blijft als voor het redesign. ── */
+  #bootOverlay {
+    font-family: 'Barlow Condensed', sans-serif;
+    line-height: normal;
+    font-weight: normal;
+    -webkit-font-smoothing: auto;
   }
 
   /* Boot overlay */
@@ -454,395 +173,387 @@
     color: var(--text-dim); text-transform: uppercase;
   }
 
-  /* Animations */
-  @keyframes blink { 0%,100%{ opacity:1; } 50%{ opacity:0.15; } }
-  @keyframes pulse { 0%,100%{ opacity:0.35; } 50%{ opacity:1; } }
 
-  audio { display: none; }
-
-  /* ── Mobiel ── */
-  @media (max-width: 768px) {
-    body { padding: 12px; }
-
-    .panel { padding: 16px; }
-
-    /* Display-blok: scan-display onder de kanaalweergave op smal scherm */
-    .display-block { flex-direction: column; gap: 16px; align-items: flex-start; }
-    .scan-display  { align-items: flex-start; width: 100%; }
-    .scan-window   { width: 100%; }
-
-    /* Weerstation: 2 kolommen op mobiel */
-    .weather-grid { grid-template-columns: repeat(2, 1fr) !important; }
-
-    /* Getijdentabel: compacter */
-    .tij-table th, .tij-table td { padding: 7px 8px; font-size: 12px; }
-
-    /* AIS kaart: iets minder hoog */
-    .ais-map-wrap { aspect-ratio: 4/3; }
-
-    /* Ticker wat kleiner */
-    .ticker-inner { font-size: 9px; }
+  /* ── Kopbalk ── */
+  .kopbalk { background: var(--lm-kop); border-bottom: 1px solid var(--lm-rand); }
+  .kopbalk-in {
+    max-width: 1360px; margin: 0 auto; padding: 14px 32px;
+    display: flex; flex-wrap: wrap; align-items: center; gap: 16px 32px;
+  }
+  .merk { display: flex; align-items: center; gap: 12px; text-decoration: none; color: var(--lm-tekst); }
+  .merk svg { color: var(--lm-accent); flex: none; }
+  .merk-naam {
+    display: block; font-family: 'Barlow Condensed', sans-serif; font-size: 21px; font-weight: 700;
+    letter-spacing: 0.06em; text-transform: uppercase; line-height: 1.1;
+  }
+  .merk-sub { display: block; font-size: 13px; color: var(--lm-label); line-height: 1.2; }
+  .hoofdnav { display: flex; flex-wrap: wrap; gap: 4px; flex: 1 1 auto; }
+  .hoofdnav a {
+    color: var(--lm-label); text-decoration: none; padding: 10px 14px; border-radius: 8px; font-weight: 500;
+  }
+  .hoofdnav a:hover { color: var(--lm-tekst); background: var(--lm-vlak-2); }
+  .kop-rechts { display: flex; align-items: center; gap: 20px; margin-left: auto; }
+  .klok { display: flex; flex-direction: column; align-items: flex-end; line-height: 1.15; }
+  .klok-tijd { font-size: 22px; font-weight: 700; color: var(--lm-tekst); }
+  .klok-datum { font-size: 12px; color: var(--lm-label); }
+  .thema {
+    display: flex; padding: 3px; border-radius: 10px;
+    background: var(--lm-vlak-2); border: 1px solid var(--lm-rand);
+  }
+  .thema button {
+    border: 0; border-radius: 8px; padding: 9px 14px; min-height: 40px;
+    background: transparent; color: var(--lm-label); font-weight: 600; font-size: 14px;
+  }
+  .thema button[aria-pressed="true"] { background: var(--lm-vlak-3); color: var(--lm-tekst); }
+  .thema-mobiel {
+    display: none; width: 44px; height: 44px; border-radius: 10px;
+    background: var(--lm-vlak-2); border: 1px solid var(--lm-rand); color: var(--lm-tekst);
+    align-items: center; justify-content: center;
   }
 
-  /* ── Weerstation + Getijden: gedeelde tegel-stijl ── */
-  .data-grid {
-    display: grid;
-    gap: 10px;
-    margin-bottom: 14px;
-  }
-  .data-grid-4 { grid-template-columns: repeat(4, 1fr); }
-  .data-grid-3 { grid-template-columns: repeat(3, 1fr); }
-  .data-grid-2 { grid-template-columns: repeat(2, 1fr); }
-  @media (max-width: 700px) {
-    .data-grid-4, .data-grid-3 { grid-template-columns: repeat(2, 1fr); }
-  }
-  @media (max-width: 400px) {
-    .data-grid-4, .data-grid-3, .data-grid-2 { grid-template-columns: 1fr; }
+  /* ── Inhoud ── */
+  .inhoud {
+    max-width: 1360px; margin: 0 auto; padding: 24px 32px 40px;
+    display: flex; flex-direction: column; gap: 24px;
   }
 
+  /* Waarschuwingsbalk */
+  .waarschuwing {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px;
+    padding: 16px 20px; border-radius: 12px;
+    background: var(--lm-warn-bg); border: 1px solid var(--lm-warn-rand);
+  }
+  .waarschuwing svg { color: var(--lm-warn-icoon); flex: none; }
+  .waarschuwing-tekst { flex: 1 1 520px; min-width: 0; color: var(--lm-warn-tekst); }
+  .waarschuwing-tekst strong { display: block; color: var(--lm-warn-sterk); font-weight: 600; }
+  .waarschuwing-tekst b { color: var(--lm-warn-sterk); }
+  .waarschuwing a {
+    color: var(--lm-warn-sterk); font-weight: 600; padding: 10px 14px;
+    border: 1px solid var(--lm-warn-rand); border-radius: 8px; text-decoration: none;
+  }
+
+  /* Nu op het water */
+  .nu { display: flex; flex-direction: column; gap: 12px; }
+  .nu-kop { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+  .nu-kop .kop { color: var(--lm-label); }
+  .nu-meta { font-size: 13px; color: var(--lm-dim); }
+  .nu-raster { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; }
+
+  /* Tegel (klassenaam dtile blijft, de scripts zetten hem) */
   .dtile {
-    background: #060809;
-    border: 1px solid #0f1318;
-    border-radius: 8px;
-    padding: 12px 14px;
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-    box-shadow: inset 0 2px 6px rgba(0,0,0,0.4);
+    background: var(--lm-vlak); border: 1px solid var(--lm-rand); border-radius: 12px;
+    padding: 16px 18px; display: flex; flex-direction: column; gap: 6px; min-width: 0;
   }
-  .dtile-label {
-    font-size: 9px;
-    letter-spacing: 3px;
-    color: var(--text-dim);
-    text-transform: uppercase;
-  }
-  .dtile-value {
-    font-family: 'Orbitron', monospace;
-    font-size: 28px;
-    font-weight: 700;
-    color: var(--accent);
-    line-height: 1;
-    text-shadow: 0 0 14px rgba(232,160,32,0.25);
-  }
-  .dtile-value.small { font-size: 18px; }
-  .dtile-unit {
-    font-size: 10px;
-    letter-spacing: 2px;
-    color: var(--text-dim);
-    text-transform: uppercase;
-  }
-  .dtile.warn .dtile-value { color: var(--red); text-shadow: 0 0 12px rgba(192,57,43,0.4); }
-  .dtile.low  .dtile-value { color: #5a8fa8; text-shadow: 0 0 12px rgba(90,143,168,0.3); }
+  .dtile-label { font-size: 13px; color: var(--lm-label); font-weight: 500; }
+  .dtile-waarde { display: flex; align-items: baseline; gap: 6px; flex-wrap: wrap; }
+  .dtile-value { font-size: 40px; font-weight: 700; line-height: 1; color: var(--lm-tekst); }
+  .dtile-value.small { font-size: 26px; }
+  .eenheid { color: var(--lm-label); }
+  .dtile-unit { font-size: 14px; color: var(--lm-tekst); }
+  .dtile.warn .dtile-value { color: var(--lm-warn); }
+  .dtile.warn .dtile-unit  { color: var(--lm-warn-tekst); }
+  .dtile.low .dtile-value  { color: var(--lm-zee); }
+  #tijWaterstand { color: var(--lm-zee); }
+  .dtile.compact { background: var(--lm-vlak-2); border-color: transparent; padding: 12px 14px; }
+  .dtile.compact .dtile-value { font-size: 26px; }
 
-  /* Beaufort-balk */
-  .bft-bar { display: flex; gap: 2px; margin-top: 5px; }
-  .bft-seg {
-    flex: 1; height: 4px; border-radius: 2px;
-    background: #1a2030; transition: background 0.4s;
-  }
-  .bft-seg.on-green  { background: var(--green); }
-  .bft-seg.on-orange { background: #f39c12; }
-  .bft-seg.on-red    { background: var(--red); }
+  /* Beaufort-balk: amber tot de huidige kracht, rood op de windstoten */
+  .bft-bar { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 3px; margin-top: 4px; }
+  .bft-seg { height: 6px; border-radius: 2px; background: var(--lm-segment); transition: background 0.4s; }
+  .bft-seg.aan   { background: var(--lm-accent); }
+  .bft-seg.stoot { background: var(--lm-warn-icoon); }
 
-  /* Windroos */
-  .wind-rose { width: 44px; height: 44px; margin-top: 4px; }
-  .wind-rose svg { width: 100%; height: 100%; }
+  /* Twee kolommen */
+  .hoofdrij { display: flex; flex-wrap: wrap; gap: 24px; align-items: flex-start; }
+  .kolom-hoofd { flex: 999 1 640px; min-width: 0; display: flex; flex-direction: column; gap: 24px; }
+  .kolom-zij   { flex: 1 1 360px;  min-width: 0; display: flex; flex-direction: column; gap: 24px; }
 
-  /* Marifoonbericht blok */
-  .marifoon-block {
-    background: #060809;
-    border: 1px solid #0f1318;
-    border-radius: 8px;
-    padding: 14px 16px;
-    margin-bottom: 14px;
+  /* Paneel */
+  .paneel {
+    background: var(--lm-vlak); border: 1px solid var(--lm-rand); border-radius: 14px;
+    padding: 18px; display: flex; flex-direction: column; gap: 14px; min-width: 0;
   }
-  .marifoon-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 10px;
+  .paneel-kop { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+  .paneel-kop-links { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .bijgewerkt { font-size: 13px; color: var(--lm-dim); }
+
+  /* Statuspil met led */
+  .pil {
+    display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600;
+    padding: 3px 9px; border-radius: 999px; color: var(--lm-label); background: var(--lm-vlak-2);
+    white-space: nowrap;
   }
-  .marifoon-district {
-    font-family: 'Orbitron', monospace;
-    font-size: 10px;
-    letter-spacing: 3px;
-    color: var(--accent);
-    text-transform: uppercase;
+  .led { width: 7px; height: 7px; border-radius: 50%; background: var(--lm-led-uit); flex: none; transition: background 0.15s; }
+  .led.rx  { background: var(--lm-live); }
+  .led.pwr { background: var(--lm-accent); }
+  .pil:has(.led.rx) { color: var(--lm-live); background: var(--lm-live-bg); }
+
+  /* Knop */
+  .knop {
+    min-height: 44px; padding: 8px 14px; border-radius: 8px;
+    border: 1px solid var(--lm-rand-2); background: var(--lm-vlak-2); color: var(--lm-tekst);
+    font-weight: 500; font-size: 14px;
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
   }
-  .marifoon-time {
-    font-size: 9px;
-    letter-spacing: 2px;
-    color: var(--text-dim);
-    text-transform: uppercase;
+  .knop:hover { border-color: var(--lm-accent); }
+
+  /* AIS */
+  .paneel.ais { padding: 0; gap: 0; overflow: hidden; }
+  .paneel.ais .paneel-kop { padding: 12px 18px; border-bottom: 1px solid var(--lm-rand); }
+  .ais-kaart { position: relative; height: 560px; background: var(--lm-kaart-bg); }
+  .ais-kaart iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: none; display: block; }
+
+  /* Camera's */
+  .sectie { display: flex; flex-direction: column; gap: 12px; }
+  .sectie-kop { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+  .cam-raster { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; }
+  .cam { border-radius: 12px; overflow: hidden; border: 1px solid var(--lm-rand); background: var(--lm-vlak); }
+  .cam-beeld { position: relative; aspect-ratio: 16 / 9; background: var(--lm-cam-bg); }
+  .cam-beeld video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
+  .cam-live, .cam-timestamp {
+    position: absolute; z-index: 4; padding: 3px 8px; border-radius: 6px;
+    background: rgba(10, 16, 22, 0.85); color: var(--lm-tekst); font-size: 12px; pointer-events: none;
   }
-  .marifoon-warning {
-    font-family: 'Orbitron', monospace;
-    font-size: 11px;
-    letter-spacing: 2px;
-    padding: 6px 12px;
-    border-radius: 4px;
-    margin-bottom: 10px;
-    text-transform: uppercase;
+  .cam-live { left: 12px; top: 12px; display: inline-flex; align-items: center; gap: 6px; font-weight: 600; }
+  .cam-live span { width: 7px; height: 7px; border-radius: 50%; background: var(--lm-warn-icoon); }
+  .cam-timestamp { right: 12px; bottom: 12px; font-family: 'JetBrains Mono', ui-monospace, monospace; }
+  .cam-loading {
+    position: absolute; inset: 0; z-index: 5; background: var(--lm-cam-bg);
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px;
+    transition: opacity 0.4s;
   }
-  .marifoon-warning.geen {
-    background: rgba(39,174,96,0.12);
-    color: var(--green);
-    border: 1px solid rgba(39,174,96,0.25);
+  .cam-loading.hidden { opacity: 0; pointer-events: none; }
+  .cam-loading svg { color: var(--lm-dim); }
+  .cam-loading-text { font-size: 14px; color: var(--lm-label); }
+  .cam-onder { padding: 12px 14px; display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+  .cam-naam { font-weight: 600; }
+  .cam-plek { font-size: 13px; color: var(--lm-label); }
+  .cam-keuze { display: none; padding: 3px; border-radius: 10px; background: var(--lm-vlak-2); }
+  .cam-keuze button {
+    border: 0; border-radius: 8px; padding: 8px 12px; min-height: 40px;
+    background: transparent; color: var(--lm-label); font-size: 13px; font-weight: 600;
   }
-  .marifoon-warning.actief {
-    background: rgba(192,57,43,0.15);
-    color: var(--red);
-    border: 1px solid rgba(192,57,43,0.3);
+  .cam-keuze button[aria-selected="true"] { background: var(--lm-vlak-3); color: var(--lm-tekst); }
+
+  /* Marifoon */
+  .vhf-display {
+    display: flex; align-items: center; gap: 18px; padding: 14px 16px; border-radius: 12px;
+    background: var(--lm-bg); border: 1px solid var(--lm-rand);
   }
-  .marifoon-body {
-    font-family: 'Barlow Condensed', sans-serif;
-    font-size: 13px;
-    line-height: 1.55;
-    color: var(--text);
-    white-space: pre-wrap;
-    letter-spacing: 0.3px;
+  .vhf-links { display: flex; flex-direction: column; }
+  .vhf-label { font-size: 12px; color: var(--lm-label); }
+  .vhf-kanaal { font-size: 56px; font-weight: 700; line-height: 1; color: var(--lm-accent); }
+  .vhf-info { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+  .vhf-naam { font-size: 18px; font-weight: 600; }
+  .vhf-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chip {
+    display: inline-flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 600;
+    padding: 2px 7px; border-radius: 5px; background: var(--lm-vlak-2); color: var(--lm-dim);
   }
-  .marifoon-body .hl { color: var(--accent); font-weight: 600; }
+  .chip:has(.led.pwr) { background: var(--lm-accent-bg); color: var(--lm-accent); }
+  .chip:has(.led.rx)  { background: var(--lm-live-bg);   color: var(--lm-live); }
+  .scan-status-badge.active { background: var(--lm-accent-bg); color: var(--lm-accent); }
+
+  .kanalen { list-style: none; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+  .kanaal {
+    display: flex; gap: 10px; align-items: center; min-height: 44px; padding: 6px 10px;
+    border-radius: 8px; border: 1px solid var(--lm-rand); background: var(--lm-vlak-2);
+    font-size: 13px; color: var(--lm-tekst); transition: border-color 0.3s, background 0.3s, color 0.3s;
+    min-width: 0;
+  }
+  .kanaal-nr { font-weight: 700; color: var(--lm-label); width: 22px; flex: none; }
+  .kanaal-naam { line-height: 1.2; overflow-wrap: anywhere; }
+  .kanaal.nood { border-color: var(--lm-warn-rand); background: var(--lm-warn-bg); color: var(--lm-warn-sterk); font-weight: 600; }
+  .kanaal.nood .kanaal-nr { color: var(--lm-warn); }
+  .kanaal.active { border-color: var(--lm-accent); background: var(--lm-accent-bg); color: var(--lm-accent-tekst); font-weight: 600; }
+  .kanaal.active .kanaal-nr { color: var(--lm-accent); }
+
+  /* Getij */
+  .getij-aftel { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+  .getij-aftel span:first-child { color: var(--lm-label); }
+  .getij-aftel b { font-size: 26px; font-weight: 700; }
+  .getij-grafiek svg { width: 100%; height: auto; display: block; }
+  .curve-lijn   { fill: none; stroke: var(--lm-zee); stroke-width: 2.5; stroke-linejoin: round; }
+  .curve-raster { stroke: var(--lm-vlak-2); stroke-width: 1; }
+  .curve-nap    { stroke: var(--lm-rand-2); stroke-dasharray: 3 4; }
+  .curve-kenter { fill: var(--lm-zee); }
+  .curve-nu     { stroke: var(--lm-accent); stroke-width: 1.5; }
+  .curve-nu-stip{ fill: var(--lm-accent); stroke: var(--lm-vlak); stroke-width: 2; }
+  .getij-as { display: flex; justify-content: space-between; font-size: 11px; color: var(--lm-dim); margin-top: 4px; }
+  .kenters { display: grid; grid-template-columns: repeat(auto-fit, minmax(64px, 1fr)); gap: 6px; }
+  .kenter { padding: 8px; border-radius: 8px; background: var(--lm-vlak-2); display: flex; flex-direction: column; gap: 2px; border: 1px solid transparent; }
+  .kenter span { font-size: 12px; color: var(--lm-label); }
+  .kenter b { font-weight: 700; }
+  .kenter small { font-size: 12px; font-family: 'JetBrains Mono', ui-monospace, monospace; }
+  .kenter.voorbij { opacity: 0.6; }
+  .kenter.volgend { background: var(--lm-zee-bg); border-color: var(--lm-zee-rand); }
+  .kenter.volgend span { color: var(--lm-zee-tekst); }
+
+  .getij-tabel summary {
+    min-height: 44px; border-radius: 8px; border: 1px solid var(--lm-rand-2); background: var(--lm-vlak-2);
+    color: var(--lm-tekst); font-weight: 500; cursor: pointer; list-style: none;
+    display: flex; align-items: center; justify-content: center; gap: 8px; padding: 8px 14px;
+  }
+  .getij-tabel summary::-webkit-details-marker { display: none; }
+  .getij-tabel summary::after { content: ''; width: 8px; height: 8px; border-right: 2px solid currentColor; border-bottom: 2px solid currentColor; transform: rotate(45deg) translateY(-2px); transition: transform 0.2s; }
+  .getij-tabel[open] summary::after { transform: rotate(-135deg) translateY(-2px); }
+  .tabel-vak { overflow-x: auto; margin-top: 10px; }
+  .tij-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  .tij-table th {
+    font-size: 12px; font-weight: 600; color: var(--lm-label); text-align: left;
+    padding: 6px 10px; border-bottom: 1px solid var(--lm-rand);
+  }
+  .tij-table td { padding: 8px 10px; border-bottom: 1px solid var(--lm-vlak-2); color: var(--lm-tekst); white-space: nowrap; }
+  .tij-table tr:last-child td { border-bottom: none; }
+  .tij-table tr.laag td { color: var(--lm-zee-tekst); }
+  .tij-table tr.next td { background: var(--lm-zee-bg); }
+  .tij-badge { display: inline-block; font-size: 12px; font-weight: 600; padding: 1px 7px; border-radius: 4px; }
+  .tij-badge.hoog { background: var(--lm-accent-bg); color: var(--lm-accent); }
+  .tij-badge.laag { background: var(--lm-zee-bg);    color: var(--lm-zee); }
+  .tij-astro { font-size: 11px; color: var(--lm-dim); margin-left: 4px; cursor: help; }
+
+  /* Weer */
+  .weerrij { display: flex; flex-wrap: wrap; gap: 24px; align-items: stretch; }
+  .weerstation { flex: 1 1 320px; }
+  .knmi { flex: 2 1 560px; }
+  .weer-raster { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  .windroos { display: flex; align-items: center; gap: 12px; }
+  .windroos svg { width: 52px; height: 52px; flex: none; }
+  .windroos-cirkel { fill: none; stroke: var(--lm-rand-2); }
+  .windroos-letter { fill: var(--lm-dim); font-size: 6px; font-family: 'Barlow', sans-serif; }
+  .windroos-punt { fill: var(--lm-accent); }
+  .windroos-staart { fill: var(--lm-dim); }
+
+  .marifoon-header { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+  .marifoon-time { font-size: 13px; color: var(--lm-dim); }
+  .marifoon-warning { padding: 10px 14px; border-radius: 10px; font-size: 14px; }
+  .marifoon-warning.geen { background: var(--lm-live-bg); color: var(--lm-live); }
+  .marifoon-warning.actief { background: var(--lm-warn-bg); color: var(--lm-warn-tekst); border: 1px solid var(--lm-warn-rand); }
+  .marifoon-warning.actief b { color: var(--lm-warn-sterk); }
+  .marifoon-body { font-size: 17px; line-height: 1.55; color: var(--lm-tekst); white-space: pre-wrap; }
+  .marifoon-body .hl { color: var(--lm-accent); font-weight: 600; }
   .marifoon-body .lbl {
-    display: block;
-    font-size: 10px;
-    letter-spacing: 2px;
-    text-transform: uppercase;
-    color: var(--text-dim);
-    margin-top: 8px;
+    display: block; font-size: 13px; font-weight: 600; color: var(--lm-label);
+    margin-top: 10px; white-space: normal;
   }
   .marifoon-body .lbl:first-child { margin-top: 0; }
 
-  /* Getijden: tabel */
-  .tij-table {
-    width: 100%;
-    border-collapse: collapse;
-    font-family: 'Barlow Condensed', sans-serif;
-    font-size: 13px;
-    letter-spacing: 0.5px;
-  }
-  .tij-table th {
-    font-size: 9px; letter-spacing: 3px;
-    color: var(--text-dim); text-transform: uppercase;
-    padding: 6px 12px; text-align: left;
-    border-bottom: 1px solid var(--rim);
-  }
-  .tij-table td {
-    padding: 9px 12px;
-    border-bottom: 1px solid #0f1318;
-    color: var(--text);
-  }
-  .tij-table tr:last-child td { border-bottom: none; }
-  .tij-table tr.hoog td { color: var(--accent); }
-  .tij-table tr.laag td { color: #5a8fa8; }
-  .tij-table tr.next td { background: rgba(232,160,32,0.06); }
-  .tij-table tr.next td:first-child { border-left: 2px solid var(--accent); }
-  .tij-badge {
-    display: inline-block;
-    font-family: 'Orbitron', monospace;
-    font-size: 9px; letter-spacing: 1px;
-    padding: 2px 7px; border-radius: 3px;
-    text-transform: uppercase;
-  }
-  .tij-badge.hoog { background: rgba(232,160,32,0.15); color: var(--accent); }
-  .tij-badge.laag { background: rgba(90,143,168,0.15); color: #5a8fa8; }
-  /* Markering achter een NAP-waarde die alleen astronomisch is, dus zonder opzet. */
-  .tij-astro {
-    font-size: 9px;
-    letter-spacing: 1px;
-    color: var(--text-dim);
-    margin-left: 4px;
-    cursor: help;
-  }
-
-  /* Gedeelde footer-regel */
-  .panel-updated {
-    font-size: 9px; letter-spacing: 2px;
-    color: var(--text-dim); text-align: right;
-    margin-top: 8px;
-  }
-
-  /* Ticker — blijft voor de marifoonwaarschuwings-samenvatting bovenaan */
-  .ticker-wrap {
-    background: #060809; border: 1px solid #0f1318;
-    border-radius: 6px; padding: 0 16px;
-    overflow: hidden; height: 34px;
-    display: flex; align-items: center;
-    margin-bottom: 14px;
-  }
-  .ticker-inner {
-    display: flex; white-space: nowrap;
-    animation: ticker-scroll 60s linear infinite;
-    font-family: 'Orbitron', monospace;
-    font-size: 10px; letter-spacing: 2px;
-    color: var(--accent); text-transform: uppercase;
-  }
-  @keyframes ticker-scroll {
-    0%   { transform: translateX(100vw); }
-    100% { transform: translateX(-100%); }
-  }
-
-  /* Legacy aliases — voor alle bestaande code die weather-tile/weather-grid gebruikt */
-  .weather-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; margin-bottom: 16px; }
-  @media (max-width: 640px) { .weather-grid { grid-template-columns: repeat(2,1fr); } }
-  .weather-tile { background:#060809; border:1px solid #0f1318; border-radius:8px; padding:14px 16px; display:flex; flex-direction:column; gap:6px; }
-  .weather-tile-label { font-size:9px; letter-spacing:3px; color:var(--text-dim); text-transform:uppercase; }
-  .weather-tile-value { font-family:'Orbitron',monospace; font-size:26px; font-weight:700; color:var(--accent); line-height:1; }
-  .weather-tile-unit  { font-size:10px; letter-spacing:2px; color:var(--text-dim); text-transform:uppercase; }
-  .weather-tile.alert .weather-tile-value { color:var(--red); }
-  .ticker-label { font-size:9px; letter-spacing:3px; color:var(--text-dim); text-transform:uppercase; margin-bottom:8px; }
-  .weather-updated { font-size:9px; letter-spacing:2px; color:var(--text-dim); text-align:right; margin-top:8px; }
-
-  /* ── AIS paneel ── */
-  .ais-map-wrap {
-    position: relative;
-    width: 100%;
-    aspect-ratio: 16/7;
-    border-radius: 8px;
-    border: 1px solid #0f1318;
-    overflow: hidden;
-    background: #040608;
-    box-shadow: inset 0 2px 8px rgba(0,0,0,0.5);
-  }
-
-  .ais-map-wrap iframe {
-    position: absolute;
-    inset: 0;
-    width: 100%; height: 100%;
-    border: none;
-    display: block;
-    filter: brightness(0.90) saturate(0.8) contrast(1.05);
-  }
-
-  /* ── Getijdentabel ── */
-  .tij-table {
-    width: 100%;
-    border-collapse: collapse;
-    font-family: 'Barlow Condensed', sans-serif;
-    font-size: 13px;
-    letter-spacing: 0.5px;
-  }
-
-  .tij-table th {
-    font-size: 9px;
-    letter-spacing: 3px;
-    color: var(--text-dim);
-    text-transform: uppercase;
-    padding: 6px 12px;
-    text-align: left;
-    border-bottom: 1px solid var(--rim);
-  }
-
-  .tij-table td {
-    padding: 9px 12px;
-    border-bottom: 1px solid #0f1318;
-    color: var(--text);
-  }
-
-  .tij-table tr:last-child td { border-bottom: none; }
-
-  .tij-table tr.hoog td { color: var(--accent); }
-  .tij-table tr.laag td { color: #5a8fa8; }
-  .tij-table tr.next td { background: rgba(232,160,32,0.06); }
-  .tij-table tr.next td:first-child { border-left: 2px solid var(--accent); }
-
-  .tij-badge {
-    display: inline-block;
-    font-family: 'Orbitron', monospace;
-    font-size: 9px;
-    letter-spacing: 1px;
-    padding: 2px 7px;
-    border-radius: 3px;
-    text-transform: uppercase;
-  }
-  .tij-badge.hoog { background: rgba(232,160,32,0.15); color: var(--accent); }
-  .tij-badge.laag { background: rgba(90,143,168,0.15); color: #5a8fa8; }
-
-  /* ── Extra panelen, uitklapbaar onderaan ── */
+  /* Extra panelen */
   .extra-knop {
-    width: 100%; max-width: 1200px;
-    font-family: 'Cinzel', serif;
-    font-size: 12px; letter-spacing: 4px; text-transform: uppercase;
-    color: var(--accent);
-    background: var(--panel);
-    border: 1px solid var(--rim);
-    border-radius: 12px;
-    padding: 16px 24px;
-    margin-bottom: 20px;
-    cursor: pointer;
+    width: 100%; min-height: 52px; border-radius: 12px; border: 1px solid var(--lm-rand);
+    background: var(--lm-vlak); color: var(--lm-tekst); padding: 12px 20px;
+    font-family: 'Barlow Condensed', sans-serif; font-size: 18px; font-weight: 600;
+    letter-spacing: 0.04em; text-transform: uppercase;
     display: flex; align-items: center; justify-content: center; gap: 12px;
-    box-shadow: 0 0 0 1px #0a0c10, inset 0 1px 0 rgba(255,255,255,0.04);
-    transition: border-color 0.15s, background 0.15s;
   }
-  .extra-knop:hover { border-color: rgba(232,160,32,0.4); background: #171c25; }
-  .extra-knop:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-  .extra-knop .caret { font-family: 'Orbitron', monospace; font-size: 10px; transition: transform 0.2s; }
-  .extra-knop[aria-expanded="true"] .caret { transform: rotate(180deg); }
+  .extra-knop:hover { border-color: var(--lm-accent); }
+  .extra-knop .caret { width: 8px; height: 8px; border-right: 2px solid currentColor; border-bottom: 2px solid currentColor; transform: rotate(45deg) translateY(-2px); transition: transform 0.2s; }
+  .extra-knop[aria-expanded="true"] .caret { transform: rotate(-135deg) translateY(-2px); }
+  #extraPanelen { display: flex; flex-wrap: wrap; gap: 24px; align-items: flex-start; }
+  #extraPanelen > .paneel { flex: 1 1 440px; }
 
-  #extraPanelen { width: 100%; display: flex; flex-direction: column; align-items: center; }
-
-  /* Getij: aftelklok */
   .klok-blok {
-    background: #060809; border: 1px solid #0f1318; border-radius: 8px;
-    padding: 20px 22px; display: flex; align-items: center;
-    justify-content: space-between; gap: 20px; flex-wrap: wrap;
-    box-shadow: inset 0 2px 8px rgba(0,0,0,0.5);
+    background: var(--lm-bg); border: 1px solid var(--lm-rand); border-radius: 12px;
+    padding: 18px 20px; display: flex; align-items: center; justify-content: space-between; gap: 20px; flex-wrap: wrap;
   }
-  .klok-cijfers {
-    font-family: 'Orbitron', monospace;
-    font-size: clamp(38px, 11vw, 64px); font-weight: 900;
-    color: var(--accent); line-height: 1; letter-spacing: -1px;
-    font-variant-numeric: tabular-nums; text-shadow: 0 0 22px rgba(232,160,32,0.3);
-  }
-  .klok-blok.laag .klok-cijfers { color: #5a8fa8; text-shadow: 0 0 22px rgba(90,143,168,0.3); }
-  .klok-sub { font-size: 12px; letter-spacing: 2px; color: var(--text-dim); text-transform: uppercase; margin-top: 8px; }
-  .klok-rechts { text-align: right; min-width: 0; }
+  .klok-cijfers { font-size: clamp(38px, 9vw, 56px); font-weight: 700; color: var(--lm-accent); line-height: 1; }
+  .klok-blok.laag .klok-cijfers { color: var(--lm-zee); }
+  .klok-sub { font-size: 14px; color: var(--lm-label); margin-top: 8px; }
+  .klok-rechts { text-align: right; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+  .cyclus-baan { position: relative; height: 30px; background: var(--lm-vlak-2); border: 1px solid var(--lm-rand); border-radius: 8px; overflow: hidden; }
+  .cyclus-nu { position: absolute; top: 0; bottom: 0; width: 3px; background: var(--lm-accent); transition: left 0.6s; }
+  .cyclus-rand { display: flex; justify-content: space-between; gap: 8px; font-size: 12px; color: var(--lm-label); margin-top: 6px; }
+  .extra-raster { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
 
-  .cyclus { margin-top: 14px; }
-  .cyclus-baan {
-    position: relative; height: 34px;
-    background: linear-gradient(to right, rgba(90,143,168,0.18), rgba(232,160,32,0.18));
-    border: 1px solid #0f1318; border-radius: 6px; overflow: hidden;
-  }
-  .cyclus-nu { position: absolute; top: 0; bottom: 0; width: 2px; background: var(--accent); box-shadow: 0 0 8px var(--accent); transition: left 0.6s; }
-  .cyclus-rand { display: flex; justify-content: space-between; gap: 8px; font-size: 10px; letter-spacing: 2px; color: var(--text-dim); text-transform: uppercase; margin-top: 6px; }
-
-  /* Golven */
   .golfrij { display: flex; flex-direction: column; gap: 8px; }
   .golfkaart {
-    background: #060809; border: 1px solid #0f1318; border-radius: 8px;
-    padding: 12px 14px; display: grid; gap: 10px 16px;
-    grid-template-columns: 1fr auto auto auto; align-items: center; min-width: 0;
+    background: var(--lm-vlak-2); border: 1px solid transparent; border-radius: 10px; padding: 12px 14px;
+    display: grid; gap: 10px 16px; grid-template-columns: 1fr auto auto auto; align-items: center; min-width: 0;
   }
-  .golfkaart.zeegat { border-color: rgba(232,160,32,0.3); background: rgba(232,160,32,0.05); }
-  @media (max-width: 640px) { .golfkaart { grid-template-columns: 1fr 1fr; } }
-  .golf-naam { font-size: 14px; letter-spacing: 1px; color: var(--text); min-width: 0; }
-  .golf-naam small { display: block; font-size: 10px; letter-spacing: 2px; color: var(--text-dim); text-transform: uppercase; }
+  .golfkaart.zeegat { border-color: var(--lm-zee-rand); background: var(--lm-zee-bg); }
+  .golf-naam { font-size: 15px; font-weight: 500; min-width: 0; }
+  .golf-naam small { display: block; font-size: 12px; font-weight: 400; color: var(--lm-label); }
   .golf-meet { text-align: right; min-width: 0; }
-  .golf-meet b {
-    display: block; font-family: 'Orbitron', monospace; font-size: 20px;
-    font-weight: 700; color: var(--accent); line-height: 1; font-variant-numeric: tabular-nums;
-  }
-  .golf-meet.max b { color: var(--text); font-size: 16px; }
-  .golf-meet.ri b { color: #5a8fa8; font-size: 16px; }
-  .golf-meet span { font-size: 9px; letter-spacing: 2px; color: var(--text-dim); text-transform: uppercase; }
-
-  .verwacht { margin-top: 14px; }
-  .verwacht-kop { font-size: 10px; letter-spacing: 3px; color: var(--text-dim); text-transform: uppercase; margin-bottom: 8px; }
-  .staafjes { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; align-items: end; }
+  .golf-meet b { display: block; font-size: 20px; font-weight: 700; color: var(--lm-tekst); line-height: 1.1; }
+  .golf-meet.max b, .golf-meet.ri b { font-size: 16px; color: var(--lm-tekst-2); }
+  .golf-meet span { font-size: 11px; color: var(--lm-label); }
+  .verwacht-kop { font-size: 13px; font-weight: 600; color: var(--lm-label); margin-bottom: 8px; }
+  .staafjes { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; align-items: end; }
   .staaf { display: flex; flex-direction: column; align-items: center; gap: 6px; min-width: 0; }
-  .staaf-balk { width: 100%; background: linear-gradient(to top, rgba(232,160,32,0.5), rgba(232,160,32,0.9)); border-radius: 3px 3px 0 0; }
-  .staaf.nu .staaf-balk { background: linear-gradient(to top, rgba(90,143,168,0.5), rgba(90,143,168,0.95)); }
-  .staaf-cm { font-family: 'Orbitron', monospace; font-size: 12px; color: var(--accent); font-variant-numeric: tabular-nums; }
-  .staaf.nu .staaf-cm { color: #5a8fa8; }
-  .staaf-tijd { font-size: 9px; letter-spacing: 1px; color: var(--text-dim); text-transform: uppercase; }
+  .staaf-balk { width: 100%; background: var(--lm-accent); border-radius: 3px 3px 0 0; opacity: 0.85; }
+  .staaf.nu .staaf-balk { background: var(--lm-zee); }
+  .staaf-cm { font-size: 12px; color: var(--lm-tekst); }
+  .staaf-tijd { font-size: 11px; color: var(--lm-label); }
 
-  footer {
-    width: 100%; max-width: 1200px;
-    text-align: center;
-    padding: 12px 0 20px;
-    font-size: 10px; letter-spacing: 3px;
-    color: var(--text-dim); text-transform: uppercase;
+  footer.voet {
+    max-width: 1360px; margin: 0 auto; padding: 16px 32px 32px;
+    display: flex; flex-wrap: wrap; justify-content: space-between; gap: 12px;
+    font-size: 13px; color: var(--lm-dim);
+  }
+  footer.voet > div { border-top: 1px solid var(--lm-rand); }
+
+  .tabbalk { display: none; }
+
+  audio { display: none; }
+
+  /* ── Tablet en mobiel: één kolom in de volgorde van het mobiele ontwerp ── */
+  @media (max-width: 900px) {
+    .hoofdrij, .kolom-hoofd, .kolom-zij { display: contents; }
+    #waarschuwingBalk { order: 1; }
+    #nu        { order: 2; }
+    #getij     { order: 3; }
+    #camera    { order: 4; }
+    #ais       { order: 5; }
+    #marifoon  { order: 6; }
+    #weer      { order: 7; }
+    #extraKnop { order: 8; }
+    #extraPanelen { order: 9; }
+  }
+
+  @media (max-width: 768px) {
+    .kopbalk-in { padding: 10px 16px; gap: 10px; flex-wrap: nowrap; }
+    .merk { min-width: 0; gap: 10px; }
+    .merk svg { width: 28px; height: 28px; }
+    .hoofdnav, .thema, .klok-datum, .merk-sub { display: none; }
+    .thema-mobiel { display: inline-flex; }
+    .kop-rechts { gap: 10px; }
+    .klok-tijd { font-size: 15px; }
+    .merk-naam { font-size: 16px; letter-spacing: 0.03em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .merk > span { min-width: 0; }
+    .inhoud { padding: 14px 16px 104px; gap: 16px; }
+    .nu-raster { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+    .nu .dtile { padding: 12px 14px; gap: 4px; }
+    .nu .dtile-value { font-size: 32px; }
+    .dtile-unit { font-size: 13px; }
+    .nu-meta { display: none; }
+    .ais-kaart { height: 340px; }
+    .paneel { padding: 14px; }
+    .waarschuwing { padding: 12px 14px; }
+    .waarschuwing a { display: none; }
+    .golfkaart { grid-template-columns: 1fr 1fr; }
+    footer.voet { padding: 0 16px 96px; }
+
+    .tabbalk {
+      display: grid; grid-template-columns: repeat(5, minmax(0, 1fr));
+      position: fixed; left: 0; right: 0; bottom: 0; z-index: 50;
+      background: var(--lm-kop); border-top: 1px solid var(--lm-rand);
+      padding: 6px 4px calc(10px + env(safe-area-inset-bottom));
+    }
+    .tabbalk a {
+      display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
+      min-height: 52px; color: var(--lm-label); text-decoration: none; font-size: 12px; font-weight: 500;
+    }
+    .tabbalk a:first-child { color: var(--lm-accent); font-weight: 600; }
+  }
+
+  @media (max-width: 640px) {
+    .cam-keuze { display: flex; }
+    .cam.mobiel-verborgen { display: none; }
+  }
+
+  @media (max-width: 400px) {
+    .kanalen { grid-template-columns: 1fr; }
+    .extra-raster { grid-template-columns: 1fr; }
   }
 </style>
 </head>
@@ -858,365 +569,376 @@
 </div>
 
 <!-- Header -->
-<header>
-  <div class="brand">Lubberts Maritiem · VHF Terschelling</div>
-  <div class="utc-clock" id="utcClock">00:00:00</div>
+<header class="kopbalk">
+  <div class="kopbalk-in">
+    <a class="merk" href="#nu">
+      <svg width="34" height="34" viewBox="0 0 34 34" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 30V12"/><path d="M12 30h10"/><circle cx="17" cy="9" r="2.5"/><path d="M10.5 3.5a9 9 0 0 0 0 11"/><path d="M23.5 3.5a9 9 0 0 1 0 11"/><path d="M6.5 1a14 14 0 0 0 0 16"/><path d="M27.5 1a14 14 0 0 1 0 16"/></svg>
+      <span>
+        <span class="merk-naam">Lubberts Maritiem</span>
+        <span class="merk-sub">Terschelling · VHF &amp; Camera</span>
+      </span>
+    </a>
+    <nav class="hoofdnav" aria-label="Secties">
+      <a href="#nu">Nu</a>
+      <a href="#ais">AIS</a>
+      <a href="#camera">Camera's</a>
+      <a href="#marifoon">Marifoon</a>
+      <a href="#getij">Getij</a>
+      <a href="#weer">Weer</a>
+    </nav>
+    <div class="kop-rechts">
+      <div class="klok">
+        <span class="klok-tijd mono" id="utcClock">00:00:00</span>
+        <span class="klok-datum" id="klokDatum">Nederlandse tijd</span>
+      </div>
+      <div class="thema" role="group" aria-label="Weergave">
+        <button type="button" data-thema-knop="dag" aria-pressed="true">Dag</button>
+        <button type="button" data-thema-knop="nacht" aria-pressed="false">Nacht</button>
+      </div>
+      <button type="button" class="thema-mobiel" id="themaMobiel" aria-label="Nachtmodus aan" aria-pressed="false">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+      </button>
+    </div>
+  </div>
 </header>
 
-<!-- ═══════════════════════════ RADIO PANEEL ═══════════════════════════ -->
-<div class="panel">
+<main class="inhoud">
 
-  <!-- Display: channel + scanner -->
-  <div class="display-block">
+  <!-- KNMI-waarschuwing, alleen zichtbaar bij een actieve waarschuwing -->
+  <section class="waarschuwing" id="waarschuwingBalk" aria-label="Waarschuwing" hidden>
+    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
+    <div class="waarschuwing-tekst">
+      <strong>KNMI-waarschuwing</strong>
+      <span id="waarschuwingTekst"></span>
+    </div>
+    <a href="#knmi">Volledig marifoonbericht</a>
+  </section>
 
-    <div class="ch-left">
-      <div class="channel-label-small">Kanaal</div>
-      <div class="channel-number" id="chDisplay">02</div>
-      <div class="channel-name" id="chName">VC Brandaris</div>
-      <div class="led-row">
-        <div class="led-item"><div class="led pwr"></div>PWR</div>
-        <div class="led-item"><div class="led rx" id="ledRx"></div>RX</div>
-        <div class="led-item"><div class="led" id="ledTx"></div>TX</div>
+  <!-- ═══════════════════════════ NU OP HET WATER ═══════════════════════════ -->
+  <section class="nu" id="nu" aria-labelledby="nuKop">
+    <div class="nu-kop">
+      <h2 class="kop" id="nuKop">Nu op het water</h2>
+      <span class="nu-meta" id="nuMeta">Station Hoorn · RWS West-Terschelling</span>
+    </div>
+    <div class="nu-raster">
+
+      <div class="dtile" id="dtWind">
+        <div class="dtile-label">Wind</div>
+        <div class="dtile-waarde"><span class="dtile-value" id="dvWind">—</span><span class="eenheid">kn</span></div>
+        <div class="dtile-unit" id="dvWindSub">—</div>
+        <div class="bft-bar" id="bftBar" aria-hidden="true"></div>
       </div>
-    </div>
 
-    <!-- Scan display rechts -->
-    <div class="scan-display">
-      <div class="scan-display-label">Scan</div>
-      <div class="scan-window">
-        <div class="scan-cursor"></div>
-        <div class="scan-list" id="scanList"></div>
+      <div class="dtile" id="dtGusts">
+        <div class="dtile-label">Windstoten</div>
+        <div class="dtile-waarde"><span class="dtile-value" id="dvGusts">—</span><span class="eenheid">kn</span></div>
+        <div class="dtile-unit" id="dvGustsSub">—</div>
       </div>
-      <div class="scan-status-badge" id="scanBadge">● Standby</div>
-    </div>
 
-  </div>
-
-</div>
-
-<!-- ═══════════════════════════ CAMERA PANEEL ═══════════════════════════ -->
-<div class="panel">
-
-  <div class="camera-header">
-    <div class="camera-title">Havencamera — Live</div>
-    <div class="camera-controls">
-      <div class="cam-live-badge">
-        <div class="led rx"></div>LIVE
+      <div class="dtile" id="dtWaterstand">
+        <div class="dtile-label">Waterstand</div>
+        <div class="dtile-waarde"><span class="dtile-value" id="tijWaterstand">—</span><span class="eenheid">cm NAP</span></div>
+        <div class="dtile-unit"><span id="tijOpzet">—</span> · gemeten <span id="tijMeettijd">—</span></div>
       </div>
-    </div>
-  </div>
 
-  <div class="camera-dual">
-
-    <!-- CAM 1 -->
-    <div>
-      <div class="camera-slot-label">CAM 1 — Havenkom</div>
-      <div class="camera-viewport">
-        <div class="cam-corner tl"></div>
-        <div class="cam-corner tr"></div>
-        <div class="cam-corner bl"></div>
-        <div class="cam-corner br"></div>
-        <div class="cam-overlay-top">
-          <div class="cam-rec-dot"></div>
-          <div class="cam-name-badge">CAM 1 — Havenkom</div>
-        </div>
-        <div class="cam-overlay-bottom">
-          <div class="cam-location">Terschelling · Havenkom</div>
-          <div class="cam-timestamp" id="camTimestamp1">--:--:--</div>
-        </div>
-        <video id="camVideo1" muted playsinline autoplay></video>
-        <div class="cam-loading" id="camLoading1">
-          <div class="cam-loading-icon">◎</div>
-          <div class="cam-loading-text" id="camLoadingText1">Stream verbinden…</div>
-        </div>
+      <div class="dtile" id="dtNextTide">
+        <div class="dtile-label" id="tijNextLabel">Volgend getij</div>
+        <div class="dtile-waarde"><span class="dtile-value" id="tijNextValue">—</span></div>
+        <div class="dtile-unit" id="tijNextUnit">—</div>
       </div>
-    </div>
 
-    <!-- CAM 2 -->
-    <div>
-      <div class="camera-slot-label">CAM 2 — Veerkade</div>
-      <div class="camera-viewport">
-        <div class="cam-corner tl"></div>
-        <div class="cam-corner tr"></div>
-        <div class="cam-corner bl"></div>
-        <div class="cam-corner br"></div>
-        <div class="cam-overlay-top">
-          <div class="cam-rec-dot"></div>
-          <div class="cam-name-badge">CAM 2 — Veerkade</div>
-        </div>
-        <div class="cam-overlay-bottom">
-          <div class="cam-location">Terschelling · Veerkade</div>
-          <div class="cam-timestamp" id="camTimestamp2">--:--:--</div>
-        </div>
-        <video id="camVideo2" muted playsinline autoplay></video>
-        <div class="cam-loading" id="camLoading2">
-          <div class="cam-loading-icon">◎</div>
-          <div class="cam-loading-text" id="camLoadingText2">Stream verbinden…</div>
-        </div>
-      </div>
-    </div>
-
-  </div>
-
-</div>
-
-<!-- ═══════════════════════════ AIS ALLE SCHEPEN ═══════════════════════════ -->
-<div class="panel">
-
-  <div class="camera-header">
-    <div class="camera-title">AIS — Scheepvaart Brandaris</div>
-    <div class="camera-controls">
-      <div class="cam-live-badge">
-        <div class="led rx"></div>AIS LIVE
-      </div>
-    </div>
-  </div>
-
-  <div class="ais-map-wrap">
-    <div class="cam-corner tl"></div>
-    <div class="cam-corner tr"></div>
-    <div class="cam-corner bl"></div>
-    <div class="cam-corner br"></div>
-    <iframe
-      src="https://www.marinetraffic.com/en/ais/embed/zoom:11/centery:53.37/centerx:5.22/maptype:0/shownames:true/mmsi:0/shipid:0/fleet:/fleet_id:/vtypes:/showmenu:false/remember:false"
-      loading="lazy"
-      allowfullscreen
-      title="AIS scheepvaart rondom Terschelling">
-    </iframe>
-  </div>
-
-</div>
-
-<!-- ═══════════════════════ WEERSTATION — HOORN TERSCHELLING ═══════════════ -->
-<div class="panel">
-
-  <div class="camera-header">
-    <div class="camera-title">Weerstation — Hoorn Terschelling</div>
-    <div class="camera-controls">
-      <div class="cam-live-badge">
-        <div class="led rx" id="weatherLed"></div>OPEN-METEO
-      </div>
-    </div>
-  </div>
-
-  <!-- Rij 1: wind + richting + stoten + temp -->
-  <div class="data-grid data-grid-4" style="margin-bottom:10px;">
-
-    <div class="dtile" id="dtWind">
-      <div class="dtile-label">Wind</div>
-      <div class="dtile-value" id="dvWind">—</div>
-      <div class="dtile-unit">knopen</div>
-      <div class="bft-bar" id="bftBar"></div>
-    </div>
-
-    <div class="dtile">
-      <div class="dtile-label">Richting</div>
-      <div class="dtile-value" id="dvDir">—</div>
-      <div class="dtile-unit" id="dvDirText">—</div>
-      <div class="wind-rose">
-        <svg viewBox="0 0 44 44" id="windRoseSvg">
-          <circle cx="22" cy="22" r="20" fill="none" stroke="#1a2430" stroke-width="1"/>
-          <text x="22" y="7"  text-anchor="middle" fill="#546e7a" font-size="6" font-family="Barlow Condensed">N</text>
-          <text x="22" y="40" text-anchor="middle" fill="#546e7a" font-size="6" font-family="Barlow Condensed">S</text>
-          <text x="5"  y="24" text-anchor="middle" fill="#546e7a" font-size="6" font-family="Barlow Condensed">W</text>
-          <text x="39" y="24" text-anchor="middle" fill="#546e7a" font-size="6" font-family="Barlow Condensed">O</text>
-          <g id="windArrow" transform="rotate(0 22 22)">
-            <polygon points="22,6 19,22 22,19 25,22" fill="#e8a020"/>
-            <polygon points="22,38 19,22 22,25 25,22" fill="#546e7a"/>
-          </g>
-        </svg>
-      </div>
-    </div>
-
-    <div class="dtile" id="dtGusts">
-      <div class="dtile-label">Windstoten</div>
-      <div class="dtile-value" id="dvGusts">—</div>
-      <div class="dtile-unit">knopen</div>
-    </div>
-
-    <div class="dtile">
-      <div class="dtile-label">Temperatuur</div>
-      <div class="dtile-value" id="dvTemp">—</div>
-      <div class="dtile-unit">°C</div>
-    </div>
-
-  </div>
-
-  <!-- Rij 2: zicht + druk + vochtigheid + dauwpunt -->
-  <div class="data-grid data-grid-4" style="margin-bottom:14px;">
-
-    <div class="dtile">
-      <div class="dtile-label">Zicht</div>
-      <div class="dtile-value" id="dvVis">—</div>
-      <div class="dtile-unit">km</div>
-    </div>
-
-    <div class="dtile">
-      <div class="dtile-label">Luchtdruk</div>
-      <div class="dtile-value small" id="dvPres">—</div>
-      <div class="dtile-unit">hPa</div>
-    </div>
-
-    <div class="dtile">
-      <div class="dtile-label">Vochtigheid</div>
-      <div class="dtile-value" id="dvHum">—</div>
-      <div class="dtile-unit">%</div>
-    </div>
-
-    <div class="dtile">
-      <div class="dtile-label">Dauwpunt</div>
-      <div class="dtile-value" id="dvDew">—</div>
-      <div class="dtile-unit">°C</div>
-    </div>
-
-  </div>
-
-  <!-- Marifoonbericht KNMI — district Harlingen -->
-  <div class="marifoon-block">
-    <div class="marifoon-header">
-      <div class="marifoon-district" id="marifoonDistrict">▸ Marifoonbericht KNMI</div>
-      <div class="marifoon-time" id="marifoonTime">—</div>
-    </div>
-    <div class="marifoon-warning geen" id="marifoonWarning">Waarschuwing laden…</div>
-    <div class="marifoon-body" id="marifoonBody">—</div>
-  </div>
-
-  <div class="panel-updated" id="weatherUpdated">Laden…</div>
-
-</div>
-
-<!-- ════════════════════════ GETIJDEN — WEST-TERSCHELLING ════════════════════ -->
-<div class="panel">
-
-  <div class="camera-header">
-    <div class="camera-title">Getijden — West-Terschelling</div>
-    <div class="camera-controls">
-      <div class="cam-live-badge">
-        <div class="led rx" id="tijLed"></div>RWS LIVE
-      </div>
-    </div>
-  </div>
-
-  <!-- Actuele stand + volgende + tijd -->
-  <div class="data-grid data-grid-3" style="margin-bottom:12px;">
-
-    <div class="dtile" id="dtWaterstand">
-      <div class="dtile-label">Waterstand NAP</div>
-      <div class="dtile-value" id="tijWaterstand">—</div>
-      <div class="dtile-unit" id="tijOpzet">cm</div>
-    </div>
-
-    <div class="dtile" id="dtNextTide">
-      <div class="dtile-label" id="tijNextLabel">Volgend HW/LW</div>
-      <div class="dtile-value small" id="tijNextValue">—</div>
-      <div class="dtile-unit" id="tijNextUnit">—</div>
-    </div>
-
-    <div class="dtile">
-      <div class="dtile-label">Gemeten om</div>
-      <div class="dtile-value small" id="tijMeettijd">—</div>
-      <div class="dtile-unit">lokaal</div>
-    </div>
-
-  </div>
-
-  <!-- Mini getijgrafiek (canvas) -->
-  <!-- Getijdentabel: vandaag t/m overmorgen -->
-  <table class="tij-table">
-    <thead>
-      <tr>
-        <th>Dag</th>
-        <th>Tijd</th>
-        <th>Type</th>
-        <th>NAP (cm)</th>
-      </tr>
-    </thead>
-    <tbody id="tijBody">
-      <tr><td colspan="4" style="text-align:center;color:var(--text-dim);padding:20px;">Laden…</td></tr>
-    </tbody>
-  </table>
-
-  <div class="panel-updated" id="tijUpdated">Laden…</div>
-
-</div>
-
-<!-- ════════════════════════ EXTRA PANELEN ════════════════════════ -->
-<button class="extra-knop" id="extraKnop" type="button" aria-expanded="false" aria-controls="extraPanelen">
-  Extra panelen <span class="caret">▼</span>
-</button>
-
-<div id="extraPanelen" hidden>
-
-  <!-- Aftelklok naar het eerstvolgende extreem -->
-  <div class="panel">
-    <div class="camera-header">
-      <div class="camera-title">Aftelklok — West-Terschelling</div>
-      <div class="camera-controls">
-        <div class="cam-live-badge"><div class="led rx" id="klokLed"></div>Waddendata</div>
-      </div>
-    </div>
-
-    <div class="klok-blok" id="klokBlok">
-      <div>
-        <div class="klok-cijfers" id="klokCijfers">--:--:--</div>
-        <div class="klok-sub" id="klokSub">tot het eerstvolgende getij</div>
-      </div>
-      <div class="klok-rechts">
-        <div class="dtile-label" id="klokDoel">—</div>
-        <div class="dtile-value" id="klokHoogte">—</div>
-        <div class="dtile-unit" id="klokOpzet">cm NAP</div>
-      </div>
-    </div>
-
-    <div class="cyclus">
-      <div class="cyclus-baan"><div class="cyclus-nu" id="cyclusNu" style="left:0%"></div></div>
-      <div class="cyclus-rand">
-        <span id="cyclusVorig">—</span>
-        <span id="cyclusHuidig">—</span>
-        <span id="cyclusVolgend">—</span>
-      </div>
-    </div>
-
-    <div class="data-grid data-grid-2" style="margin-top:14px; margin-bottom:0;">
-      <div class="dtile" id="klokDaarnaTegel">
-        <div class="dtile-label" id="klokDaarnaLabel">Daarna</div>
-        <div class="dtile-value small" id="klokDaarna">—</div>
-        <div class="dtile-unit" id="klokDaarnaSub">—</div>
-      </div>
       <div class="dtile">
-        <div class="dtile-label">Watertemperatuur</div>
-        <div class="dtile-value small" id="watertemp">—</div>
-        <div class="dtile-unit" id="watertempSub">°C</div>
+        <div class="dtile-label">Zicht</div>
+        <div class="dtile-waarde"><span class="dtile-value" id="dvVis">—</span><span class="eenheid">km</span></div>
+        <div class="dtile-unit">Station Hoorn</div>
       </div>
+
+      <div class="dtile">
+        <div class="dtile-label">Luchtdruk</div>
+        <div class="dtile-waarde"><span class="dtile-value" id="dvPres">—</span><span class="eenheid">hPa</span></div>
+        <div class="dtile-unit" id="nuLuchtSub">—</div>
+      </div>
+
+    </div>
+  </section>
+
+  <div class="hoofdrij">
+
+    <div class="kolom-hoofd">
+
+      <!-- ═══════════════════════════ AIS ═══════════════════════════ -->
+      <section class="paneel ais" id="ais" aria-labelledby="aisKop">
+        <div class="paneel-kop">
+          <div class="paneel-kop-links">
+            <h2 class="kop" id="aisKop">AIS · Scheepvaart Brandaris</h2>
+            <span class="pil"><span class="led rx"></span>Live</span>
+          </div>
+          <button type="button" class="knop" id="aisVolledig" aria-label="Kaart op volledig scherm">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 9V4h5"/><path d="M20 9V4h-5"/><path d="M4 15v5h5"/><path d="M20 15v5h-5"/></svg>
+          </button>
+        </div>
+        <div class="ais-kaart" id="aisKaart">
+          <iframe
+            src="https://www.marinetraffic.com/en/ais/embed/zoom:11/centery:53.37/centerx:5.22/maptype:0/shownames:true/mmsi:0/shipid:0/fleet:/fleet_id:/vtypes:/showmenu:false/remember:false"
+            loading="lazy"
+            allowfullscreen
+            title="AIS scheepvaart rondom Terschelling">
+          </iframe>
+        </div>
+      </section>
+
+      <!-- ═══════════════════════════ CAMERA'S ═══════════════════════════ -->
+      <section class="sectie" id="camera" aria-labelledby="camKop">
+        <div class="sectie-kop">
+          <h2 class="kop" id="camKop">Havencamera's</h2>
+          <div class="cam-keuze" role="tablist" aria-label="Camera kiezen">
+            <button type="button" role="tab" data-cam-knop="cam1" aria-selected="true">Havenkom</button>
+            <button type="button" role="tab" data-cam-knop="cam2" aria-selected="false">Veerkade</button>
+          </div>
+        </div>
+        <div class="cam-raster">
+
+          <!-- CAM 1 -->
+          <div class="cam" data-cam="cam1">
+            <div class="cam-beeld">
+              <span class="cam-live"><span></span>Live</span>
+              <span class="cam-timestamp" id="camTimestamp1">--:--:--</span>
+              <video id="camVideo1" muted playsinline autoplay></video>
+              <div class="cam-loading" id="camLoading1">
+                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7h3l2-3h8l2 3h3v13H3z"/><circle cx="12" cy="13" r="4"/></svg>
+                <div class="cam-loading-text" id="camLoadingText1">Stream verbinden…</div>
+              </div>
+            </div>
+            <div class="cam-onder"><span class="cam-naam">Cam 1 · Havenkom</span><span class="cam-plek">West-Terschelling</span></div>
+          </div>
+
+          <!-- CAM 2 -->
+          <div class="cam mobiel-verborgen" data-cam="cam2">
+            <div class="cam-beeld">
+              <span class="cam-live"><span></span>Live</span>
+              <span class="cam-timestamp" id="camTimestamp2">--:--:--</span>
+              <video id="camVideo2" muted playsinline autoplay></video>
+              <div class="cam-loading" id="camLoading2">
+                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7h3l2-3h8l2 3h3v13H3z"/><circle cx="12" cy="13" r="4"/></svg>
+                <div class="cam-loading-text" id="camLoadingText2">Stream verbinden…</div>
+              </div>
+            </div>
+            <div class="cam-onder"><span class="cam-naam">Cam 2 · Veerkade</span><span class="cam-plek">West-Terschelling</span></div>
+          </div>
+
+        </div>
+      </section>
+
     </div>
 
-    <div class="panel-updated" id="klokUpdated">Laden…</div>
+    <div class="kolom-zij">
+
+      <!-- ═══════════════════════════ MARIFOON ═══════════════════════════ -->
+      <section class="paneel" id="marifoon" aria-labelledby="vhfKop">
+        <div class="paneel-kop">
+          <h2 class="kop" id="vhfKop">Marifoon</h2>
+        </div>
+        <div class="vhf-display">
+          <div class="vhf-links">
+            <span class="vhf-label">Kanaal</span>
+            <span class="vhf-kanaal" id="chDisplay">02</span>
+          </div>
+          <div class="vhf-info">
+            <span class="vhf-naam" id="chName">VC Brandaris</span>
+            <div class="vhf-chips">
+              <span class="chip"><span class="led pwr"></span>PWR</span>
+              <span class="chip"><span class="led rx" id="ledRx"></span>RX</span>
+              <span class="chip"><span class="led" id="ledTx"></span>TX</span>
+              <span class="chip scan-status-badge" id="scanBadge">● Standby</span>
+            </div>
+          </div>
+        </div>
+        <ul class="kanalen" id="scanList" aria-label="Scanlijst"></ul>
+      </section>
+
+      <!-- ═══════════════════════════ GETIJ ═══════════════════════════ -->
+      <section class="paneel" id="getij" aria-labelledby="getijKop">
+        <div class="paneel-kop">
+          <h2 class="kop" id="getijKop">Getij · West-Terschelling</h2>
+          <span class="pil"><span class="led" id="tijLed"></span>RWS</span>
+        </div>
+        <div class="getij-aftel">
+          <span id="getijRichting">Volgend getij over</span>
+          <b class="mono" id="getijAftel">—</b>
+        </div>
+        <div class="getij-grafiek">
+          <svg id="getijCurve" viewBox="0 0 340 130" role="img" aria-label="Getijcurve vandaag"></svg>
+          <div class="getij-as mono" aria-hidden="true"><span>00</span><span>06</span><span>12</span><span>18</span><span>24</span></div>
+        </div>
+        <div class="kenters" id="getijKenters"></div>
+        <details class="getij-tabel">
+          <summary>Getijtabel komende 4 dagen</summary>
+          <div class="tabel-vak">
+            <table class="tij-table">
+              <thead>
+                <tr>
+                  <th>Dag</th>
+                  <th>Tijd</th>
+                  <th>Type</th>
+                  <th>NAP (cm)</th>
+                </tr>
+              </thead>
+              <tbody id="tijBody">
+                <tr><td colspan="4" style="text-align:center;color:var(--lm-dim);padding:20px;">Laden…</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </details>
+        <div class="bijgewerkt" id="tijUpdated">Laden…</div>
+      </section>
+
+    </div>
   </div>
 
-  <!-- Golven in het zeegat -->
-  <div class="panel">
-    <div class="camera-header">
-      <div class="camera-title" id="golfTitel">Golven — Zeegat van Terschelling</div>
-      <div class="camera-controls">
-        <div class="cam-live-badge"><div class="led rx" id="golfLed"></div>Meetboeien</div>
+  <!-- ═══════════════════════ WEER EN MARIFOONBERICHT ═══════════════════════ -->
+  <div class="weerrij" id="weer">
+
+    <section class="paneel weerstation" aria-labelledby="weerKop">
+      <div class="paneel-kop">
+        <h2 class="kop" id="weerKop">Weerstation Hoorn</h2>
+        <span class="pil"><span class="led" id="weatherLed"></span>Open-Meteo</span>
       </div>
-    </div>
+      <div class="weer-raster">
+        <div class="dtile compact">
+          <div class="dtile-label">Richting</div>
+          <div class="windroos">
+            <svg viewBox="0 0 44 44" id="windRoseSvg" aria-hidden="true">
+              <circle class="windroos-cirkel" cx="22" cy="22" r="20" stroke-width="1"/>
+              <text class="windroos-letter" x="22" y="7"  text-anchor="middle">N</text>
+              <text class="windroos-letter" x="22" y="40" text-anchor="middle">Z</text>
+              <text class="windroos-letter" x="5"  y="24" text-anchor="middle">W</text>
+              <text class="windroos-letter" x="39" y="24" text-anchor="middle">O</text>
+              <g id="windArrow" transform="rotate(0 22 22)">
+                <polygon class="windroos-punt" points="22,6 19,22 22,19 25,22"/>
+                <polygon class="windroos-staart" points="22,38 19,22 22,25 25,22"/>
+              </g>
+            </svg>
+            <div>
+              <div class="dtile-value" id="dvDir">—</div>
+              <div class="dtile-unit" id="dvDirText">—</div>
+            </div>
+          </div>
+        </div>
+        <div class="dtile compact">
+          <div class="dtile-label">Temperatuur</div>
+          <div class="dtile-waarde"><span class="dtile-value" id="dvTemp">—</span><span class="eenheid">°C</span></div>
+        </div>
+        <div class="dtile compact">
+          <div class="dtile-label">Vochtigheid</div>
+          <div class="dtile-waarde"><span class="dtile-value" id="dvHum">—</span><span class="eenheid">%</span></div>
+        </div>
+        <div class="dtile compact">
+          <div class="dtile-label">Dauwpunt</div>
+          <div class="dtile-waarde"><span class="dtile-value" id="dvDew">—</span><span class="eenheid">°C</span></div>
+        </div>
+      </div>
+      <div class="bijgewerkt" id="weatherUpdated">Laden…</div>
+    </section>
 
-    <div class="golfrij" id="golfRij">
-      <div class="golfkaart"><div class="golf-naam">Laden…</div></div>
-    </div>
+    <!-- Marifoonbericht KNMI, district Harlingen -->
+    <section class="paneel knmi marifoon-block" id="knmi" aria-labelledby="marifoonDistrict">
+      <div class="marifoon-header">
+        <h2 class="kop marifoon-district" id="marifoonDistrict">Marifoonbericht KNMI</h2>
+        <div class="marifoon-time" id="marifoonTime">—</div>
+      </div>
+      <div class="marifoon-warning geen" id="marifoonWarning">Waarschuwing laden…</div>
+      <div class="marifoon-body" id="marifoonBody">—</div>
+    </section>
 
-    <div class="verwacht" id="golfVerwacht" hidden>
-      <div class="verwacht-kop" id="golfVerwachtKop">Verwachting</div>
-      <div class="staafjes" id="golfStaven"></div>
-    </div>
-
-    <div class="panel-updated" id="golfUpdated">Laden…</div>
   </div>
 
-</div>
+  <!-- ════════════════════════ EXTRA PANELEN ════════════════════════ -->
+  <button class="extra-knop" id="extraKnop" type="button" aria-expanded="false" aria-controls="extraPanelen">
+    Aftelklok en golven <span class="caret" aria-hidden="true"></span>
+  </button>
 
-<footer>Lubberts Maritiem · VHF Marine Radio Network · Terschelling</footer>
+  <div id="extraPanelen" hidden>
+
+    <!-- Aftelklok naar het eerstvolgende extreem -->
+    <section class="paneel" aria-labelledby="klokKop">
+      <div class="paneel-kop">
+        <h2 class="kop" id="klokKop">Aftelklok · West-Terschelling</h2>
+        <span class="pil"><span class="led" id="klokLed"></span>Waddendata</span>
+      </div>
+
+      <div class="klok-blok" id="klokBlok">
+        <div>
+          <div class="klok-cijfers" id="klokCijfers">--:--:--</div>
+          <div class="klok-sub" id="klokSub">tot het eerstvolgende getij</div>
+        </div>
+        <div class="klok-rechts">
+          <div class="dtile-label" id="klokDoel">—</div>
+          <div class="dtile-value small" id="klokHoogte">—</div>
+          <div class="dtile-unit" id="klokOpzet">cm NAP</div>
+        </div>
+      </div>
+
+      <div class="cyclus">
+        <div class="cyclus-baan"><div class="cyclus-nu" id="cyclusNu" style="left:0%"></div></div>
+        <div class="cyclus-rand">
+          <span id="cyclusVorig">—</span>
+          <span id="cyclusHuidig">—</span>
+          <span id="cyclusVolgend">—</span>
+        </div>
+      </div>
+
+      <div class="extra-raster">
+        <div class="dtile compact" id="klokDaarnaTegel">
+          <div class="dtile-label" id="klokDaarnaLabel">Daarna</div>
+          <div class="dtile-value small" id="klokDaarna">—</div>
+          <div class="dtile-unit" id="klokDaarnaSub">—</div>
+        </div>
+        <div class="dtile compact">
+          <div class="dtile-label">Watertemperatuur</div>
+          <div class="dtile-value small" id="watertemp">—</div>
+          <div class="dtile-unit" id="watertempSub">°C</div>
+        </div>
+      </div>
+
+      <div class="bijgewerkt" id="klokUpdated">Laden…</div>
+    </section>
+
+    <!-- Golven in het zeegat -->
+    <section class="paneel" aria-labelledby="golfTitel">
+      <div class="paneel-kop">
+        <h2 class="kop" id="golfTitel">Golven · Zeegat van Terschelling</h2>
+        <span class="pil"><span class="led" id="golfLed"></span>Meetboeien</span>
+      </div>
+
+      <div class="golfrij" id="golfRij">
+        <div class="golfkaart"><div class="golf-naam">Laden…</div></div>
+      </div>
+
+      <div class="verwacht" id="golfVerwacht" hidden>
+        <div class="verwacht-kop" id="golfVerwachtKop">Verwachting</div>
+        <div class="staafjes" id="golfStaven"></div>
+      </div>
+
+      <div class="bijgewerkt" id="golfUpdated">Laden…</div>
+    </section>
+
+  </div>
+
+</main>
+
+<footer class="voet">
+  <span>Bronnen: Open-Meteo · KNMI · Rijkswaterstaat · waddendata.nl · MarineTraffic</span>
+  <span>Lubberts Maritiem · VHF Marine Radio Network · Terschelling</span>
+</footer>
+
+<!-- Mobiele tabbalk -->
+<nav class="tabbalk" aria-label="Hoofdmenu">
+  <a href="#nu"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>Nu</a>
+  <a href="#ais"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2z"/><path d="M9 4v14"/><path d="M15 6v14"/></svg>Kaart</a>
+  <a href="#camera"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7h3l2-3h8l2 3h3v13H3z"/><circle cx="12" cy="13" r="4"/></svg>Camera</a>
+  <a href="#marifoon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21V10"/><circle cx="12" cy="7" r="2"/><path d="M7.5 3a7 7 0 0 0 0 8"/><path d="M16.5 3a7 7 0 0 1 0 8"/></svg>Marifoon</a>
+  <a href="#getij"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12c2.5-3 4.5-3 7 0s4.5 3 7 0 4.5-3 6 0"/><path d="M2 18c2.5-3 4.5-3 7 0s4.5 3 7 0 4.5-3 6 0"/></svg>Getij</a>
+</nav>
 
 <audio id="audioPlayer" preload="none" crossorigin="anonymous"></audio>
 
@@ -1418,6 +1140,15 @@ setInterval(() => {
 
 document.getElementById('utcClock').textContent = nlString();
 
+function vulDatum() {
+  const el = document.getElementById('klokDatum');
+  if (!el) return;
+  el.textContent = new Date().toLocaleDateString('nl-NL',
+    { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'Europe/Amsterdam' }) + ' · Nederlandse tijd';
+}
+vulDatum();
+setInterval(vulDatum, 60 * 1000);
+
 // ── Scan display ──────────────────────────────────────────────────────────────
 // Bouwt een scrollende lijst van kanalen in het scan-venster.
 // De actieve kanaal staat altijd midden in het venster.
@@ -1429,39 +1160,33 @@ function buildScanDisplay() {
   const total = SCAN_CHANNELS.length;
   list.innerHTML = '';
 
-  // Bouw 5× de lijst zodat we ruim kunnen scrollen zonder de rand te raken.
-  // Stille reset halverwege zorgt voor een naadloze oneindige loop.
-  const COPIES = 5;
-  for (let c = 0; c < COPIES; c++) {
-    SCAN_CHANNELS.forEach((item, i) => {
-      const el = document.createElement('div');
-      el.className = 'scan-item';
-      el.dataset.index = i;
-      el.innerHTML = `
-        <span class="scan-item-ch">${String(item.ch).padStart(2,'0')}</span>
-        <span class="scan-item-name">${item.name}</span>
-      `;
-      list.appendChild(el);
-    });
-  }
+  // Alle scankanalen als raster. Het actieve kanaal licht op terwijl de
+  // scanner rondgaat. Kanaal 16 (nood) heeft altijd een eigen kleur.
+  SCAN_CHANNELS.forEach((item, i) => {
+    const el = document.createElement('li');
+    el.className = 'kanaal' + (item.ch === 16 ? ' nood' : '');
+    el.dataset.index = i;
+    el.innerHTML = `
+      <span class="kanaal-nr">${String(item.ch).padStart(2,'0')}</span>
+      <span class="kanaal-naam">${item.name}</span>
+    `;
+    list.appendChild(el);
+  });
 
-  // Begin in kopie 2 (midden van de 5) zodat er zowel boven als onder ruimte is
+  // De teller loopt door, startScan rekent hem modulo het aantal kanalen terug.
   scanIndex = 2 * total;
   positionScan(scanIndex, false);
 }
 
 function positionScan(rawIdx, animate) {
-  const list    = document.getElementById('scanList');
-  const total   = SCAN_CHANNELS.length;
-  const modIdx  = ((rawIdx % total) + total) % total;
-  const winMid  = 130 / 2 - ITEM_H / 2;
-  const offset  = -(rawIdx * ITEM_H) + winMid;
+  const total  = SCAN_CHANNELS.length;
+  const modIdx = ((rawIdx % total) + total) % total;
 
-  list.style.transition = animate ? 'transform 0.45s cubic-bezier(0.4, 0, 0.2, 1)' : 'none';
-  list.style.transform  = `translateY(${offset}px)`;
-
-  list.querySelectorAll('.scan-item').forEach(el => {
-    el.classList.toggle('active', parseInt(el.dataset.index) === modIdx);
+  document.querySelectorAll('#scanList .kanaal').forEach(el => {
+    const actief = parseInt(el.dataset.index) === modIdx;
+    el.classList.toggle('active', actief);
+    if (actief) el.setAttribute('aria-current', 'true');
+    else el.removeAttribute('aria-current');
   });
 
   const ch = SCAN_CHANNELS[modIdx];
@@ -1528,13 +1253,13 @@ function startWindRoseAnimation() {
   })();
 }
 
-function buildBftBar(bft) {
+function buildBftBar(bft, stootBft) {
   const bar = document.getElementById('bftBar');
   if (!bar) return;
   bar.innerHTML = '';
   for (let i = 0; i < 12; i++) {
     const seg = document.createElement('div');
-    seg.className = 'bft-seg' + (i < bft ? ' ' + (bft <= 4 ? 'on-green' : bft <= 7 ? 'on-orange' : 'on-red') : '');
+    seg.className = 'bft-seg' + (i < bft ? ' aan' : (stootBft && i === stootBft - 1 ? ' stoot' : ''));
     bar.appendChild(seg);
   }
 }
@@ -1560,12 +1285,18 @@ async function fetchWeather() {
     document.getElementById('dvHum').textContent     = Math.round(c.relative_humidity_2m);
     document.getElementById('dvDew').textContent     = c.dew_point_2m != null ? c.dew_point_2m.toFixed(1) : '—';
 
+    document.getElementById('dvWindSub').textContent  = bft + ' Bft · uit ' + degToCompass(dirDeg) + ' ' + dirDeg + '°';
+    document.getElementById('dvGustsSub').textContent = bftFromKnots(gustKn) + ' Bft in vlagen';
+    document.getElementById('nuLuchtSub').textContent =
+      c.temperature_2m.toFixed(1).replace('.', ',') + ' °C' +
+      (c.dew_point_2m != null ? ' · dauwpunt ' + c.dew_point_2m.toFixed(1).replace('.', ',') + ' °C' : '');
+
     document.getElementById('dtGusts').classList.toggle('warn', gustKn >= 33);
     document.getElementById('dtWind').classList.toggle('warn', bft >= 6);
 
     windRoseTarget = dirDeg;
     startWindRoseAnimation();
-    buildBftBar(bft);
+    buildBftBar(bft, bftFromKnots(gustKn));
     document.getElementById('weatherLed').classList.add('rx');
 
     const [dt, tm] = c.time.split('T');
@@ -1574,6 +1305,9 @@ async function fetchWeather() {
     const t = new Date(y, mo-1, d, h, mi);
     document.getElementById('weatherUpdated').textContent =
       'Open-Meteo · Station Hoorn Terschelling · ' +
+      t.toLocaleTimeString('nl-NL', { hour:'2-digit', minute:'2-digit' });
+    document.getElementById('nuMeta').textContent =
+      'Station Hoorn · RWS West-Terschelling · bijgewerkt ' +
       t.toLocaleTimeString('nl-NL', { hour:'2-digit', minute:'2-digit' });
 
   } catch(e) {
@@ -1598,6 +1332,14 @@ const GETIJ_URL    = '/api/getij?locatie=' + API_LOCATIE;
 const escapeHtml = str => String(str)
   .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
+// De waarschuwing per district leesbaar maken: windkracht vet en een
+// scheiding na elk district. KNMI levert hem al in gewone tekst.
+function waarschuwingHtml(w) {
+  return escapeHtml(String(w).replace(/\s+/g, ' ').trim())
+    .replace(/(\d+)\s*bft\b/gi, '<b>$1 Bft</b>')
+    .replace(/<\/b>\s+(?=\S)/g, '</b> · ');
+}
+
 // Windkracht, onweer en zichtbeperkingen oplichten in de verwachtingstekst.
 const markeer = html => html.replace(
   /(\b\d{1,2}-\d{1,2}\b|windkracht \d+|storm\w*|windstoten|onweer|slecht zicht|zicht slecht|mist\w*)/gi,
@@ -1612,8 +1354,8 @@ function renderMarifoon(d) {
 
   if (distEl) {
     distEl.textContent = d.districten
-      ? '▸ Marifoonbericht KNMI — District ' + d.districten
-      : '▸ Marifoonbericht KNMI';
+      ? 'Marifoonbericht KNMI · District ' + d.districten
+      : 'Marifoonbericht KNMI';
   }
   if (timeEl) timeEl.textContent = d.opgesteld ? 'Opgesteld ' + d.opgesteld : '—';
 
@@ -1623,8 +1365,16 @@ function renderMarifoon(d) {
   const w = (d.waarschuwing || '').trim();
   const isAlert = w !== '' && !/geen waarschuwing/i.test(w);
   if (warnEl) {
-    warnEl.textContent = isAlert ? '⚠ ' + w : '✓ ' + (w || 'Geen waarschuwingen');
+    if (isAlert) warnEl.innerHTML = 'Waarschuwing: ' + waarschuwingHtml(w);
+    else warnEl.textContent = '✓ ' + (w || 'Geen waarschuwingen');
     warnEl.className   = 'marifoon-warning ' + (isAlert ? 'actief' : 'geen');
+  }
+
+  // Dezelfde waarschuwing als balk bovenaan de pagina.
+  const balk = document.getElementById('waarschuwingBalk');
+  if (balk) {
+    balk.hidden = !isAlert;
+    if (isAlert) document.getElementById('waarschuwingTekst').innerHTML = waarschuwingHtml(w);
   }
 
   if (!bodyEl) return;
@@ -1681,12 +1431,17 @@ function renderGetijden(rows, stand) {
 
   if (nextIdx >= 0) {
     const nxt = rows[nextIdx];
-    document.getElementById('tijNextLabel').textContent  = nxt.type === 'hoog' ? '▲ Volgend hoogwater' : '▽ Volgend laagwater';
+    document.getElementById('tijNextLabel').textContent  = nxt.type === 'hoog' ? 'Volgend hoogwater' : 'Volgend laagwater';
     document.getElementById('tijNextValue').textContent  = nxt.t.toLocaleTimeString('nl-NL',{hour:'2-digit',minute:'2-digit',timeZone:'Europe/Amsterdam'});
-    document.getElementById('tijNextUnit').textContent   = nxt.t.toLocaleDateString('nl-NL',{weekday:'short',day:'numeric',month:'short',timeZone:'Europe/Amsterdam'});
     const tile = document.getElementById('dtNextTide');
     tile.className = 'dtile' + (nxt.type === 'laag' ? ' low' : '');
+    getijVolgend = nxt;
+  } else {
+    getijVolgend = null;
   }
+  werkGetijAftelBij();
+  tekenGetijCurve();
+  vulKenters(rows, nextIdx);
 
   const tbody = document.getElementById('tijBody');
   tbody.innerHTML = rows.map((r,i) => {
@@ -1703,6 +1458,104 @@ function renderGetijden(rows, stand) {
   }).join('') || '<tr><td colspan="4" style="text-align:center;color:var(--text-dim);padding:16px;">Geen getijdata</td></tr>';
 
 }
+
+
+// ── Getijcurve, kenterpunten en aftellen ─────────────────────────────────────
+let getijExtremen = [];
+let getijVolgend  = null;
+
+// Waterstand tussen twee extremen, benaderd met een cosinus. Goed genoeg voor
+// een overzichtscurve, de exacte tijden en hoogtes staan in de tabel.
+function getijNiveau(ms) {
+  const e = getijExtremen;
+  for (let i = 0; i < e.length - 1; i++) {
+    const a = e[i], b = e[i + 1];
+    if (ms >= a.t && ms <= b.t) {
+      const f = (ms - a.t) / (b.t - a.t);
+      return a.val + (b.val - a.val) * (1 - Math.cos(Math.PI * f)) / 2;
+    }
+  }
+  return null;
+}
+
+function tekenGetijCurve() {
+  const svg = document.getElementById('getijCurve');
+  if (!svg) return;
+  const nu    = new Date();
+  const start = new Date(nu.getFullYear(), nu.getMonth(), nu.getDate()).getTime();
+  const W = 340, H = 130;
+
+  const punten = [];
+  for (let m = 0; m <= 1440; m += 15) {
+    const v = getijNiveau(start + m * 60000);
+    if (v != null) punten.push([m, v]);
+  }
+  if (punten.length < 2) { svg.innerHTML = ''; return; }
+
+  const waarden = punten.map(p => p[1]);
+  let lo = Math.min(...waarden), hi = Math.max(...waarden);
+  const marge = (hi - lo) * 0.12 || 10;
+  lo -= marge; hi += marge;
+  const X = m => (m / 1440 * W).toFixed(1);
+  const Y = v => (8 + (hi - v) / (hi - lo) * (H - 16)).toFixed(1);
+
+  let s = '';
+  [360, 720, 1080].forEach(m => { s += `<line class="curve-raster" x1="${X(m)}" y1="0" x2="${X(m)}" y2="${H}"/>`; });
+  if (lo < 0 && hi > 0) s += `<line class="curve-nap" x1="0" y1="${Y(0)}" x2="${W}" y2="${Y(0)}"/>`;
+  s += `<path class="curve-lijn" d="M${punten.map(p => X(p[0]) + ',' + Y(p[1])).join(' L')}"/>`;
+
+  getijExtremen
+    .filter(e => e.t >= start && e.t <= start + 86400000)
+    .forEach(e => { s += `<circle class="curve-kenter" cx="${X((e.t - start) / 60000)}" cy="${Y(e.val)}" r="3.5"/>`; });
+
+  const nuMin = (nu.getTime() - start) / 60000;
+  const nuV = getijNiveau(nu.getTime());
+  if (nuV != null) {
+    s += `<line class="curve-nu" x1="${X(nuMin)}" y1="0" x2="${X(nuMin)}" y2="${H}"/>`;
+    s += `<circle class="curve-nu-stip" cx="${X(nuMin)}" cy="${Y(nuV)}" r="5"/>`;
+  }
+  svg.innerHTML = s;
+}
+
+function vulKenters(rows, nextIdx) {
+  const vak = document.getElementById('getijKenters');
+  if (!vak) return;
+  const vandaag = new Date().toDateString();
+  const nu = Date.now();
+  vak.innerHTML = rows
+    .map((r, i) => ({ r, i }))
+    .filter(({ r }) => r.t.toDateString() === vandaag)
+    .map(({ r, i }) => {
+      const cls = 'kenter' + (r.t.getTime() < nu ? ' voorbij' : '') + (i === nextIdx ? ' volgend' : '');
+      const tijd = r.t.toLocaleTimeString('nl-NL', { hour:'2-digit', minute:'2-digit', timeZone:'Europe/Amsterdam' });
+      return `<div class="${cls}"><span>${r.type === 'hoog' ? 'HW' : 'LW'}</span><b>${tijd}</b><small>${r.val >= 0 ? '+' : ''}${r.val}</small></div>`;
+    }).join('');
+}
+
+function werkGetijAftelBij() {
+  const aftel = document.getElementById('getijAftel');
+  const richting = document.getElementById('getijRichting');
+  const sub = document.getElementById('tijNextUnit');
+  if (!getijVolgend) {
+    aftel.textContent = '—';
+    return;
+  }
+  const over = getijVolgend.t.getTime() - Date.now();
+  if (over < 0) {
+    // Het extreem is voorbij, opnieuw ophalen schuift alles door.
+    getijVolgend = null;
+    fetchGetijden();
+    return;
+  }
+  const u = Math.floor(over / 3600000);
+  const m = Math.floor((over % 3600000) / 60000);
+  const duur = u + ' u ' + m + ' min';
+  const hoog = getijVolgend.type === 'hoog';
+  richting.textContent = hoog ? 'Opkomend · hoogwater over' : 'Afgaand · laagwater over';
+  aftel.textContent = duur;
+  sub.textContent = (getijVolgend.val >= 0 ? '+' : '') + getijVolgend.val + ' cm · over ' + duur;
+}
+setInterval(() => { werkGetijAftelBij(); tekenGetijCurve(); }, 30 * 1000);
 
 async function fetchGetijden() {
   try {
@@ -1739,13 +1592,18 @@ async function fetchGetijden() {
       // Het verschil met het astronomische getij, de opzet door wind en
       // luchtdruk. Dat is de kolom "afw" op waddendata.nl.
       opzetEl.textContent = stand.opzet == null
-        ? 'cm'
-        : 'cm · opzet ' + (stand.opzet >= 0 ? '+' : '') + stand.opzet;
+        ? 'opzet onbekend'
+        : 'opzet ' + (stand.opzet >= 0 ? '+' : '') + stand.opzet + ' cm';
       tijdEl.textContent = stand.tijd.toLocaleTimeString('nl-NL', { hour:'2-digit', minute:'2-digit', timeZone:'Europe/Amsterdam' });
       wsEl.className     = 'dtile' + (stand.peil < -40 ? ' low' : '');
     } else {
-      peilEl.textContent = '—'; tijdEl.textContent = '—'; opzetEl.textContent = 'cm';
+      peilEl.textContent = '—'; tijdEl.textContent = '—'; opzetEl.textContent = '—';
     }
+
+    // Alle extremen, ook die van gisteren en morgen, voor de curve van vandaag.
+    getijExtremen = (data.extremen || [])
+      .map(e => ({ t: new Date(e.tijdstip).getTime(), val: e.waardeCm != null ? e.waardeCm : 0 }))
+      .sort((a, b) => a.t - b.t);
 
     renderGetijden(rows, stand);
     document.getElementById('tijLed').classList.add('rx');
@@ -1848,7 +1706,7 @@ async function vulAftelklok() {
       document.getElementById('klokDaarnaSub').textContent =
         (daarna.val >= 0 ? '+' : '') + daarna.val + ' cm · ' + dagNL(daarna.t);
       document.getElementById('klokDaarnaTegel').className =
-        'dtile' + (daarna.type === 'laagwater' ? ' low' : '');
+        'dtile compact' + (daarna.type === 'laagwater' ? ' low' : '');
     }
 
     document.getElementById('klokLed').classList.add('rx');
@@ -1894,7 +1752,7 @@ async function fetchGolven() {
     const d = await r.json();
     if (!r.ok || d.error) throw new Error(d.error || ('status ' + r.status));
 
-    document.getElementById('golfTitel').textContent = 'Golven — ' + d.zeegat;
+    document.getElementById('golfTitel').textContent = 'Golven · ' + d.zeegat;
 
     // Een boei die niets meet geeft null terug. Dan blijft het veld leeg,
     // beter dan een oude waarde tonen alsof hij nu geldt.
@@ -1950,6 +1808,50 @@ async function fetchGolven() {
     document.getElementById('golfUpdated').textContent = 'Golfdata tijdelijk niet beschikbaar';
   }
 }
+
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// WEERGAVE EN BEDIENING
+// ═══════════════════════════════════════════════════════════════════════════════
+
+// Dag- en nachtmodus. De keuze wordt onthouden in deze browser.
+(function weergave() {
+  const root = document.documentElement;
+  const mobiel = document.getElementById('themaMobiel');
+  const zet = thema => {
+    root.dataset.thema = thema;
+    document.querySelectorAll('[data-thema-knop]').forEach(b =>
+      b.setAttribute('aria-pressed', String(b.dataset.themaKnop === thema)));
+    if (mobiel) {
+      mobiel.setAttribute('aria-pressed', String(thema === 'nacht'));
+      mobiel.setAttribute('aria-label', thema === 'nacht' ? 'Nachtmodus uit' : 'Nachtmodus aan');
+    }
+    try { localStorage.setItem('lm-thema', thema); } catch (e) {}
+  };
+  let start = 'dag';
+  try { start = localStorage.getItem('lm-thema') === 'nacht' ? 'nacht' : 'dag'; } catch (e) {}
+  zet(start);
+  document.querySelectorAll('[data-thema-knop]').forEach(b =>
+    b.addEventListener('click', () => zet(b.dataset.themaKnop)));
+  if (mobiel) mobiel.addEventListener('click', () => zet(root.dataset.thema === 'nacht' ? 'dag' : 'nacht'));
+})();
+
+// Op een telefoon één camera tegelijk, met een keuzeknop.
+document.querySelectorAll('[data-cam-knop]').forEach(knop => {
+  knop.addEventListener('click', () => {
+    document.querySelectorAll('[data-cam-knop]').forEach(k =>
+      k.setAttribute('aria-selected', String(k === knop)));
+    document.querySelectorAll('.cam[data-cam]').forEach(c =>
+      c.classList.toggle('mobiel-verborgen', c.dataset.cam !== knop.dataset.camKnop));
+  });
+});
+
+// AIS-kaart op volledig scherm.
+document.getElementById('aisVolledig').addEventListener('click', () => {
+  const kaart = document.getElementById('aisKaart');
+  const vraag = kaart.requestFullscreen || kaart.webkitRequestFullscreen;
+  if (vraag) vraag.call(kaart);
+});
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // DATA-FEEDS starten
