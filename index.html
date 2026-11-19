@@ -96,9 +96,20 @@
     --lm-led-uit:     #5A1E16;
   }
   html[data-thema="nacht"] .kanaal.active { background: #3A1410; }
-  html[data-thema="nacht"] .cam-beeld video,
-  html[data-thema="nacht"] .ais-kaart iframe {
+  html[data-thema="nacht"] .cam-beeld video {
     filter: grayscale(1) sepia(1) saturate(6) hue-rotate(-40deg) brightness(0.55);
+  }
+
+  /* AIS-kaart donker. MarineTraffic negeert de maptype in de embed-URL: hun
+     code vergelijkt het getal met tekst-sleutels en valt zo altijd terug op de
+     lichte kaart. Daarom keren we de lichte kaart om. hue-rotate(180deg) zet
+     de tinten terug, zodat de kleuren van de scheepsiconen (type schip) gelijk
+     blijven. */
+  .ais-kaart iframe {
+    filter: invert(0.9) hue-rotate(180deg) brightness(0.95) contrast(0.95);
+  }
+  html[data-thema="nacht"] .ais-kaart iframe {
+    filter: invert(0.9) hue-rotate(180deg) grayscale(1) sepia(1) saturate(6) hue-rotate(-40deg) brightness(0.5);
   }
 
   [hidden] { display: none !important; }
