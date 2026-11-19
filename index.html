@@ -654,6 +654,14 @@
   .speler[data-status="wachten"] .speler-live { color: var(--lm-accent); }
   .speler[data-status="fout"] .speler-live { color: var(--lm-warn); }
   @keyframes speler-puls { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
+  .speler[data-status="geblokkeerd"] .speler-live { color: var(--lm-accent); }
+  .speler[data-status="geblokkeerd"] .speler-play { animation: speler-roep 1.8s ease-out infinite; }
+  @keyframes speler-roep {
+    0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--lm-accent) 60%, transparent); }
+    100% { box-shadow: 0 0 0 10px transparent; }
+  }
+  @media (prefers-reduced-motion: reduce) { .speler-play { animation: none !important; } }
+
   @media (prefers-reduced-motion: reduce) { .speler-live-stip { animation: none !important; } }
 
   .speler-bediening { display: flex; align-items: center; gap: 4px; flex: none; }
@@ -1292,6 +1300,7 @@ let scanIndex      = 0;
 let scanTimer      = null;
 let scanRunning    = false;
 let gebruikerGepauzeerd = false;   // true als de gebruiker zelf op pauze drukte
+let zetSpelerStatus = () => {};    // wordt ingevuld door de miniplayer
 let knmiBericht = null;           // laatste marifoonbericht, voor de detailvensters
 let getijKenterRijen = [];         // kenterpunten komende dagen, voor de detailvensters
 
@@ -1365,13 +1374,21 @@ function startAudio() {
   // Vrijwel elke browser blokkeert autoplay met geluid, dus de eerste klik
   // of tik waar dan ook op de pagina start de stream alsnog.
   // Niet als de gebruiker zelf op pauze heeft gedrukt.
-  const onInteract = () => { if (!gebruikerGepauzeerd) tryPlay(); };
-  document.addEventListener('click',      onInteract, { once: true });
-  document.addEventListener('touchstart', onInteract, { once: true });
+  // Klikken in de speler zelf laten we aan de spelerknoppen over.
+  const GEBAREN = ['pointerdown', 'keydown', 'touchend', 'click'];
+  const onInteract = (e) => {
+    if (e.target && e.target.closest && e.target.closest('#speler')) return;
+    GEBAREN.forEach(t => document.removeEventListener(t, onInteract, true));
+    if (!gebruikerGepauzeerd && audioPlayer.paused) tryPlay();
+  };
+  GEBAREN.forEach(t => document.addEventListener(t, onInteract, true));
 
   // Hint zodra duidelijk is dat autoplay geweigerd is.
   setTimeout(() => {
-    if (audioPlayer.paused) meld('▶ Klik om te starten', false);
+    if (audioPlayer.paused && !gebruikerGepauzeerd) {
+      meld('▶ Klik om te starten', false);
+      zetSpelerStatus('geblokkeerd');
+    }
   }, 800);
 }
 
@@ -2313,7 +2330,7 @@ function bewaardVolume() {
   const paneel   = document.getElementById('spelerPaneel');
   if (!speler) return;
 
-  const TEKST = { live: 'Live', wachten: 'Verbinden…', pauze: 'Gepauzeerd', fout: 'Geen signaal', standby: 'Uit' };
+  const TEKST = { live: 'Live', wachten: 'Verbinden…', pauze: 'Gepauzeerd', fout: 'Geen signaal', standby: 'Uit', geblokkeerd: 'Klik om te luisteren' };
   const zetStatus = status => {
     speler.dataset.status = status;
     liveTekst.textContent = TEKST[status] || status;
@@ -2321,6 +2338,7 @@ function bewaardVolume() {
     playKnop.setAttribute('aria-pressed', String(speelt));
     playKnop.setAttribute('aria-label', speelt ? 'Marifoon pauzeren' : 'Marifoon afspelen');
   };
+  zetSpelerStatus = zetStatus;
   const scanBadge = (tekst, actief) => {
     const b = document.getElementById('scanBadge');
     if (b) { b.textContent = tekst; b.classList.toggle('active', actief); }
@@ -2328,8 +2346,50 @@ function bewaardVolume() {
 
   audioPlayer.addEventListener('playing', () => zetStatus('live'));
   audioPlayer.addEventListener('waiting', () => { if (!audioPlayer.paused) zetStatus('wachten'); });
-  audioPlayer.addEventListener('pause',   () => { if (speler.dataset.status !== 'fout') zetStatus(gebruikerGepauzeerd ? 'pauze' : 'standby'); });
+  audioPlayer.addEventListener('pause',   () => {
+    if (speler.dataset.status === 'fout' || speler.dataset.status === 'geblokkeerd') return;
+    zetStatus(gebruikerGepauzeerd ? 'pauze' : 'standby');
+  });
   audioPlayer.addEventListener('error',   () => { if (!gebruikerGepauzeerd && audioPlayer.getAttribute('src')) zetStatus('fout'); });
+
+
+  // ── Automatisch opnieuw verbinden ─────────────────────────────────────────
+  // De streamserver stopt na ongeveer 20 seconden met data sturen en sluit
+  // de verbinding rond 35 seconden (gemeten 19 nov 2026). Zonder ingrijpen
+  // valt de audio dan stil. Zodra de weergave 2 seconden niet vooruitgaat, of
+  // de stream eindigt of een fout geeft, maken we een nieuwe verbinding op
+  // hetzelfde audio-element. Er is dus nooit meer dan één verbinding.
+  let herTimer = null, herPogingen = 0, laatsteStart = 0;
+  let laatsteTijd = -1, laatsteVoortgang = Date.now();
+
+  const herverbind = (reden) => {
+    if (gebruikerGepauzeerd || herTimer || !audioPlayer.getAttribute('src')) return;
+    // Snel opnieuw als de vorige verbinding even liep, langzamer als hij
+    // meteen weer wegviel (bijvoorbeeld zonder internet).
+    herPogingen = Date.now() - laatsteStart < 8000 ? herPogingen + 1 : 0;
+    const wacht = herPogingen === 0 ? 200 : Math.min(15000, 1000 * 2 ** (herPogingen - 1));
+    zetStatus(herPogingen >= 4 ? 'fout' : 'wachten');
+    console.info('Marifoon: opnieuw verbinden (' + reden + ')');
+    herTimer = setTimeout(() => {
+      herTimer = null;
+      if (gebruikerGepauzeerd) return;
+      laatsteStart = Date.now();
+      laatsteVoortgang = Date.now();
+      audioPlayer.src = STREAM_URL;
+      Promise.resolve(audioPlayer.play()).catch(() => {});
+    }, wacht);
+  };
+  audioPlayer.addEventListener('loadstart', () => { if (!laatsteStart) laatsteStart = Date.now(); });
+  audioPlayer.addEventListener('playing', () => { laatsteVoortgang = Date.now(); });
+  audioPlayer.addEventListener('timeupdate', () => {
+    if (audioPlayer.currentTime !== laatsteTijd) { laatsteTijd = audioPlayer.currentTime; laatsteVoortgang = Date.now(); }
+  });
+  audioPlayer.addEventListener('ended', () => herverbind('einde'));
+  audioPlayer.addEventListener('error', () => herverbind('fout'));
+  setInterval(() => {
+    if (!audioPlayer.paused && Date.now() - laatsteVoortgang > 2000) herverbind('hapert');
+  }, 1000);
+  window.addEventListener('online', () => { if (!audioPlayer.paused || speler.dataset.status === 'fout') herverbind('weer online'); });
 
   playKnop.addEventListener('click', (e) => {
     // De eerste klik op de pagina start de stream ook via startAudio. Die
@@ -2337,6 +2397,9 @@ function bewaardVolume() {
     e.stopPropagation();
     if (audioPlayer.paused) {
       gebruikerGepauzeerd = false;
+      laatsteStart = Date.now();
+      laatsteVoortgang = Date.now();
+      herPogingen = 0;
       audioPlayer.src = STREAM_URL;
       zetStatus('wachten');
       Promise.resolve(audioPlayer.play()).catch(() => zetStatus('fout'));
