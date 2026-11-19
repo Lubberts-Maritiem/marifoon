@@ -87,14 +87,15 @@ export default async function handler(req, res) {
       Begindatumtijd: toRwsTijd(new Date(now - 12 * 60 * 60 * 1000)),
       Einddatumtijd: toRwsTijd(new Date(now + 8 * 24 * 60 * 60 * 1000)),
     };
-    const periodeStand = {
-      Begindatumtijd: toRwsTijd(new Date(now - 2 * 60 * 60 * 1000)),
-      Einddatumtijd: toRwsTijd(new Date(now)),
+    // Venster voor de grafiek: anderhalve dag terug en drie dagen vooruit.
+    const periodeReeks = {
+      Begindatumtijd: toRwsTijd(new Date(now - 36 * 60 * 60 * 1000)),
+      Einddatumtijd: toRwsTijd(new Date(now + 72 * 60 * 60 * 1000)),
     };
 
     // Vier aanroepen parallel: type en hoogte van de astronomische extremen,
-    // de gemeten stand, en de getijtafel van waddendata.
-    const [typen, hoogtes, standen, waddenTides] = await Promise.all([
+    // de waterstandreeksen per 10 minuten, en de getijtafel van waddendata.
+    const [typen, hoogtes, reeksLijsten, waddenTides] = await Promise.all([
       haalMetingen(locatie.code, { Groepering: { Code: "GETETBRKD2" } }, periodeGetij),
       haalMetingen(
         locatie.code,
@@ -105,11 +106,17 @@ export default async function handler(req, res) {
         },
         periodeGetij
       ),
-      haalMetingen(
+      // WATHTE zonder groepering geeft drie lijsten terug, herkenbaar aan hun
+      // ProcesType: "meting", "verwachting" en "astronomisch". Nice-to-have,
+      // mag falen zonder dat de rest van het getij wegvalt.
+      haalWaarnemingenLijsten(
         locatie.code,
         { Grootheid: { Code: "WATHTE" }, Hoedanigheid: { Code: "NAP" } },
-        periodeStand
-      ).catch(() => []), // gemeten stand is nice-to-have, mag falen
+        periodeReeks
+      ).catch((e) => {
+        console.warn("Waterstandreeksen niet beschikbaar:", e.message);
+        return [];
+      }),
       haalWaddendata().catch((e) => {
         console.warn("Waddendata niet beschikbaar:", e.message);
         return null;
@@ -165,6 +172,14 @@ export default async function handler(req, res) {
     // is als in hun waterstandentabel. Staat daar niets, dan de meting van RWS.
     let actueel = leesWaddenStand(waddenTides, locatie.stand);
 
+    // Reeksen per 10 minuten voor de grafiek, als [tijd in ms, cm NAP].
+    const reeksen = {
+      gemeten: leesReeks(reeksLijsten, "meting"),
+      verwacht: leesReeks(reeksLijsten, "verwachting"),
+      astronomisch: leesReeks(reeksLijsten, "astronomisch"),
+    };
+    const standen = (reeksLijsten.find((l) => l?.AquoMetadata?.ProcesType === "meting")?.MetingenLijst) || [];
+
     if (!actueel) {
       for (let i = standen.length - 1; i >= 0; i--) {
         const w = standen[i]?.Meetwaarde?.Waarde_Numeriek;
@@ -190,6 +205,7 @@ export default async function handler(req, res) {
       volgendLaagwater,
       volgendHoogwater,
       actueel,
+      reeksen,
       bronNaam,
       // Hoeveel van de getoonde extremen uit de verwachting komen. Handig om
       // in de interface te melden welke bron er nu eigenlijk op het scherm staat.
@@ -436,6 +452,38 @@ async function haalMetingen(code, aquoMetadata, periode) {
   if (!tekst) return [];
   const json = JSON.parse(tekst);
   return json?.WaarnemingenLijst?.[0]?.MetingenLijst || [];
+}
+
+async function haalWaarnemingenLijsten(code, aquoMetadata, periode) {
+  // Zoals haalMetingen, maar geeft alle WaarnemingenLijsten terug in plaats
+  // van alleen de eerste.
+  const response = await fetch(RWS_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      Locatie: { Code: code },
+      AquoPlusWaarnemingMetadata: { AquoMetadata: aquoMetadata },
+      Periode: periode,
+    }),
+  });
+  if (response.status === 204) return [];
+  if (!response.ok) throw new Error(`RWS gaf status ${response.status}`);
+  const tekst = await response.text();
+  if (!tekst) return [];
+  return JSON.parse(tekst)?.WaarnemingenLijst || [];
+}
+
+function leesReeks(lijsten, procesType) {
+  const lijst = lijsten.find((l) => l?.AquoMetadata?.ProcesType === procesType);
+  const uit = [];
+  for (const m of lijst?.MetingenLijst || []) {
+    const w = m?.Meetwaarde?.Waarde_Numeriek;
+    // RWS gebruikt 999999999 als "geen waarde".
+    if (typeof w !== "number" || Math.abs(w) >= 10000 || !m.Tijdstip) continue;
+    const t = new Date(m.Tijdstip).getTime();
+    if (Number.isFinite(t)) uit.push([t, Math.round(w)]);
+  }
+  return uit.sort((a, b) => a[0] - b[0]);
 }
 
 function toRwsTijd(date) {
