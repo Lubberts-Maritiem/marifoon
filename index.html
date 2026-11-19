@@ -948,8 +948,8 @@
       </div>
 
       <div class="dtile" id="dtGolf">
-        <button type="button" class="tegel-open" data-detail="golven" aria-label="Golfhoogte inloop Stortemelk: details"></button>
-        <div class="dtile-label">Golfhoogte inloop Stortemelk</div>
+        <button type="button" class="tegel-open" data-detail="golven" aria-label="Golfhoogte Stortemelk-Oost: details"></button>
+        <div class="dtile-label">Golfhoogte Stortemelk-Oost</div>
         <div class="dtile-waarde"><span class="dtile-value" id="dvGolf">—</span><span class="eenheid">m</span></div>
         <div class="dtile-unit" id="dvGolfSub">—</div>
       </div>
@@ -2314,14 +2314,17 @@ setInterval(() => { if (extraGestart) tikAftelklok(); }, 1000);
 
 let golfData = null;   // laatste antwoord van /api/golven, ook voor het detailvenster
 
-// Boei Stortemelk (STM1), in de inloop van het zeegat.
-const stortemelk = d => (d?.boeien || []).find(b => b.code === 'STM1') || (d?.boeien || []).find(b => b.rol === 'zeegat');
+// Boei Stortemelk-Oost (STMO1), binnen het zeegat. Die toont de tegel.
+const GOLFBOEI = 'STMO1';
+const golfBoei = d => (d?.boeien || []).find(b => b.code === GOLFBOEI) || (d?.boeien || []).find(b => b.rol === 'binnen');
+// De golfverwachting van de bron hoort bij Stortemelk in het zeegat (STM1).
+const zeegatBoei = d => (d?.boeien || []).find(b => b.code === 'STM1') || (d?.boeien || []).find(b => b.rol === 'zeegat');
 const meter = cm => (cm / 100).toFixed(1).replace('.', ',');
 
 function vulGolfTegel(d) {
   const val = document.getElementById('dvGolf');
   const sub = document.getElementById('dvGolfSub');
-  const b = stortemelk(d);
+  const b = golfBoei(d);
   if (!b || b.hoogteCm == null) {
     val.textContent = '—';
     sub.textContent = d ? 'geen meting' : 'niet beschikbaar';
@@ -2915,21 +2918,21 @@ function vulGolven(vak, opnieuw = true) {
   }
   const m = cm => cm == null ? '—' : meter(cm);
   const boeien = (d.boeien || []).map(b => `
-    <li class="${b.code === 'STM1' ? 'zeegat' : ''}">
+    <li class="${b.code === GOLFBOEI ? 'zeegat' : ''}">
       <span class="naam">${escapeHtml(b.naam)}<small>${escapeHtml(b.toelichting || '')}</small></span>
       <span class="meet"><b>${m(b.hoogteCm)}</b><span>H⅓ m</span></span>
       <span class="meet"><b>${m(b.maxCm)}</b><span>Hmax m</span></span>
       <span class="meet"><b>${b.richtingGraden == null ? '—' : b.richtingGraden + '°'}</b><span>richting</span></span>
     </li>`).join('');
 
-  const nuCm = stortemelk(d)?.hoogteCm;
+  const nuCm = zeegatBoei(d)?.hoogteCm;
   const punten = [];
   if (nuCm != null) punten.push({ label: 'nu', cm: nuCm, nu: true });
   for (const v of d.verwachting || []) punten.push({ label: '+' + v.overUren + 'u', cm: v.hoogteCm });
   const top = Math.max(1, ...punten.map(p => p.cm));
   const staven = punten.length >= 2 ? `
     <div class="detail-sectie">
-      <span class="detail-label">Verwachting H⅓ Stortemelk (m)</span>
+      <span class="detail-label">Verwachting H⅓ Stortemelk, zeegat (m)</span>
       <div class="staafjes">${punten.map(p => `
         <div class="staaf ${p.nu ? 'nu' : ''}">
           <div class="staaf-cm">${meter(p.cm)}</div>
@@ -2940,7 +2943,7 @@ function vulGolven(vak, opnieuw = true) {
 
   const wt = d.watertemperatuur;
   vak.innerHTML = `
-    ${hoofdBlok('Golfhoogte inloop Stortemelk (H⅓)', tekstVan('dvGolf'), 'm', tekstVan('dvGolfSub'))}
+    ${hoofdBlok('Golfhoogte Stortemelk-Oost (H⅓)', tekstVan('dvGolf'), 'm', tekstVan('dvGolfSub'))}
     <div class="detail-sectie">
       <span class="detail-label">Meetboeien ${escapeHtml(d.zeegat || '')}</span>
       <ul class="boei-lijst">${boeien}</ul>
