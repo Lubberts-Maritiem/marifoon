@@ -527,15 +527,16 @@
 
 
   /* ── Klikbare tegels onder "Nu op het water" ── */
-  .nu-raster .dtile { position: relative; transition: border-color 0.15s, background 0.15s; }
+  .dtile:has(.tegel-open) { position: relative; transition: border-color 0.15s, background 0.15s; }
   .tegel-open {
     position: absolute; inset: 0; z-index: 1; border: 0; border-radius: inherit;
     background: transparent; cursor: pointer;
   }
   .tegel-open:focus-visible { outline: 2px solid var(--lm-accent); outline-offset: 2px; }
-  .nu-raster .dtile:has(.tegel-open:hover) { border-color: var(--lm-rand-2); background: var(--lm-vlak-2); }
-  .nu-raster .dtile:has(.tegel-open) .dtile-label { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-  .nu-raster .dtile:has(.tegel-open) .dtile-label::after {
+  .dtile:has(.tegel-open:hover) { border-color: var(--lm-rand-2); background: var(--lm-vlak-2); }
+  .dtile.compact:has(.tegel-open:hover) { background: var(--lm-vlak-3); }
+  .dtile:has(.tegel-open) .dtile-label { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .dtile:has(.tegel-open) .dtile-label::after {
     content: ''; width: 6px; height: 6px; flex: none; margin-right: 2px;
     border-top: 2px solid currentColor; border-right: 2px solid currentColor; transform: rotate(45deg); opacity: 0.6;
   }
@@ -642,6 +643,16 @@
   .richting-cel svg { color: var(--lm-tekst); }
   .richting-cel b { font-family: 'JetBrains Mono', ui-monospace, monospace; font-weight: 500; color: var(--lm-tekst); font-size: 11px; }
 
+  .boei-lijst { list-style: none; display: flex; flex-direction: column; gap: 6px; }
+  .boei-lijst li {
+    display: grid; grid-template-columns: 1fr repeat(3, auto); align-items: center; gap: 14px;
+    padding: 10px 12px; border-radius: 10px; background: var(--lm-vlak-2);
+  }
+  .boei-lijst li.zeegat { background: var(--lm-zee-bg); outline: 1px solid var(--lm-zee-rand); }
+  .boei-lijst .naam small { display: block; font-size: 12px; color: var(--lm-label); }
+  .boei-lijst .meet { text-align: right; }
+  .boei-lijst .meet b { display: block; font-family: 'JetBrains Mono', ui-monospace, monospace; font-weight: 700; }
+  .boei-lijst .meet span { font-size: 11px; color: var(--lm-label); }
   .kenter-lijst { list-style: none; display: flex; flex-direction: column; gap: 6px; }
   .kenter-lijst li {
     display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 12px;
@@ -936,11 +947,11 @@
         <div class="dtile-unit">Station Hoorn</div>
       </div>
 
-      <div class="dtile">
-        <button type="button" class="tegel-open" data-detail="luchtdruk" aria-label="Luchtdruk: details"></button>
-        <div class="dtile-label">Luchtdruk</div>
-        <div class="dtile-waarde"><span class="dtile-value" id="dvPres">—</span><span class="eenheid">hPa</span></div>
-        <div class="dtile-unit" id="nuLuchtSub">—</div>
+      <div class="dtile" id="dtGolf">
+        <button type="button" class="tegel-open" data-detail="golven" aria-label="Golfhoogte Stortemelk-Oost: details"></button>
+        <div class="dtile-label">Golfhoogte Stortemelk-Oost</div>
+        <div class="dtile-waarde"><span class="dtile-value" id="dvGolf">—</span><span class="eenheid">m</span></div>
+        <div class="dtile-unit" id="dvGolfSub">—</div>
       </div>
 
     </div>
@@ -1113,8 +1124,9 @@
           <div class="dtile-waarde"><span class="dtile-value" id="dvHum">—</span><span class="eenheid">%</span></div>
         </div>
         <div class="dtile compact">
-          <div class="dtile-label">Dauwpunt</div>
-          <div class="dtile-waarde"><span class="dtile-value" id="dvDew">—</span><span class="eenheid">°C</span></div>
+          <button type="button" class="tegel-open" data-detail="luchtdruk" aria-label="Luchtdruk: details"></button>
+          <div class="dtile-label">Luchtdruk</div>
+          <div class="dtile-waarde"><span class="dtile-value" id="dvPres">—</span><span class="eenheid">hPa</span></div>
         </div>
       </div>
       <div class="bijgewerkt" id="weatherUpdated">Laden…</div>
@@ -1680,13 +1692,9 @@ async function fetchWeather() {
     document.getElementById('dvVis').textContent     = (c.visibility / 1000).toFixed(1);
     document.getElementById('dvPres').textContent    = Math.round(c.pressure_msl);
     document.getElementById('dvHum').textContent     = Math.round(c.relative_humidity_2m);
-    document.getElementById('dvDew').textContent     = c.dew_point_2m != null ? c.dew_point_2m.toFixed(1) : '—';
 
     document.getElementById('dvWindSub').textContent  = bft + ' Bft · uit ' + degToCompass(dirDeg) + ' ' + dirDeg + '°';
     document.getElementById('dvGustsSub').textContent = bftFromKnots(gustKn) + ' Bft in vlagen';
-    document.getElementById('nuLuchtSub').textContent =
-      c.temperature_2m.toFixed(1).replace('.', ',') + ' °C' +
-      (c.dew_point_2m != null ? ' · dauwpunt ' + c.dew_point_2m.toFixed(1).replace('.', ',') + ' °C' : '');
 
     document.getElementById('dtGusts').classList.toggle('warn', gustKn >= 33);
     document.getElementById('dtWind').classList.toggle('warn', bft >= 6);
@@ -2211,9 +2219,8 @@ document.getElementById('extraKnop').addEventListener('click', () => {
   if (!open && !extraGestart) {
     extraGestart = true;
     vulAftelklok();
-    fetchGolven();
     setInterval(vulAftelklok, 10 * 60 * 1000);
-    setInterval(fetchGolven,  10 * 60 * 1000);
+    // Golven worden al bij het laden opgehaald voor de golftegel.
   }
 });
 
@@ -2305,11 +2312,36 @@ setInterval(() => { if (extraGestart) tikAftelklok(); }, 1000);
 
 // ── Golven ────────────────────────────────────────────────────────────────────
 
+let golfData = null;   // laatste antwoord van /api/golven, ook voor het detailvenster
+
+// Boei Stortemelk-Oost (STMO1), binnen het zeegat. Die toont de tegel.
+const GOLFBOEI = 'STMO1';
+const golfBoei = d => (d?.boeien || []).find(b => b.code === GOLFBOEI) || (d?.boeien || []).find(b => b.rol === 'binnen');
+// De golfverwachting van de bron hoort bij Stortemelk in het zeegat (STM1).
+const zeegatBoei = d => (d?.boeien || []).find(b => b.code === 'STM1') || (d?.boeien || []).find(b => b.rol === 'zeegat');
+const meter = cm => (cm / 100).toFixed(1).replace('.', ',');
+
+function vulGolfTegel(d) {
+  const val = document.getElementById('dvGolf');
+  const sub = document.getElementById('dvGolfSub');
+  const b = golfBoei(d);
+  if (!b || b.hoogteCm == null) {
+    val.textContent = '—';
+    sub.textContent = d ? 'geen meting' : 'niet beschikbaar';
+    return;
+  }
+  val.textContent = meter(b.hoogteCm);
+  sub.textContent = 'Hmax ' + (b.maxCm != null ? meter(b.maxCm) + ' m' : '—') +
+    ' · gemeten ' + (b.tijdstip ? tijdNL(new Date(b.tijdstip)) : '—');
+}
+
 async function fetchGolven() {
   try {
     const r = await fetch(GOLVEN_URL, { cache: 'no-store' });
     const d = await r.json();
     if (!r.ok || d.error) throw new Error(d.error || ('status ' + r.status));
+    golfData = d;
+    vulGolfTegel(d);
 
     document.getElementById('golfTitel').textContent = 'Golven · ' + d.zeegat;
 
@@ -2364,6 +2396,7 @@ async function fetchGolven() {
 
   } catch (e) {
     console.error('fetchGolven:', e);
+    if (!golfData) vulGolfTegel(null);
     document.getElementById('golfUpdated').textContent = 'Golfdata tijdelijk niet beschikbaar';
   }
 }
@@ -2874,12 +2907,59 @@ async function vulLuchtdruk(vak) {
   }
 }
 
+// ── Golfhoogte inloop Stortemelk ────────────────────────────────────────────
+function vulGolven(vak, opnieuw = true) {
+  const d = golfData;
+  if (!d) {
+    vak.innerHTML = '<p class="detail-laden">Golfdata laden…</p>';
+    if (opnieuw) fetchGolven().then(() => { if (detailOpen === 'golven') vulGolven(vak, false); });
+    else vak.innerHTML = foutBlok();
+    return;
+  }
+  const m = cm => cm == null ? '—' : meter(cm);
+  const boeien = (d.boeien || []).map(b => `
+    <li class="${b.code === GOLFBOEI ? 'zeegat' : ''}">
+      <span class="naam">${escapeHtml(b.naam)}<small>${escapeHtml(b.toelichting || '')}</small></span>
+      <span class="meet"><b>${m(b.hoogteCm)}</b><span>H⅓ m</span></span>
+      <span class="meet"><b>${m(b.maxCm)}</b><span>Hmax m</span></span>
+      <span class="meet"><b>${b.richtingGraden == null ? '—' : b.richtingGraden + '°'}</b><span>richting</span></span>
+    </li>`).join('');
+
+  const nuCm = zeegatBoei(d)?.hoogteCm;
+  const punten = [];
+  if (nuCm != null) punten.push({ label: 'nu', cm: nuCm, nu: true });
+  for (const v of d.verwachting || []) punten.push({ label: '+' + v.overUren + 'u', cm: v.hoogteCm });
+  const top = Math.max(1, ...punten.map(p => p.cm));
+  const staven = punten.length >= 2 ? `
+    <div class="detail-sectie">
+      <span class="detail-label">Verwachting H⅓ Stortemelk, zeegat (m)</span>
+      <div class="staafjes">${punten.map(p => `
+        <div class="staaf ${p.nu ? 'nu' : ''}">
+          <div class="staaf-cm">${meter(p.cm)}</div>
+          <div class="staaf-balk" style="height:${Math.max(6, Math.round(p.cm / top * 90))}px"></div>
+          <div class="staaf-tijd">${p.label}</div>
+        </div>`).join('')}</div>
+    </div>` : '';
+
+  const wt = d.watertemperatuur;
+  vak.innerHTML = `
+    ${hoofdBlok('Golfhoogte Stortemelk-Oost (H⅓)', tekstVan('dvGolf'), 'm', tekstVan('dvGolfSub'))}
+    <div class="detail-sectie">
+      <span class="detail-label">Meetboeien ${escapeHtml(d.zeegat || '')}</span>
+      <ul class="boei-lijst">${boeien}</ul>
+    </div>
+    ${staven}
+    ${wt ? `<div class="detail-stats">${statTegel('Watertemperatuur', String(wt.graden).replace('.', ',') + ' °C', escapeHtml(wt.station || ''))}</div>` : ''}
+    <span class="detail-bron">waddendata.nl (data Rijkswaterstaat) · meetboeien</span>`;
+}
+
 // ── Openen, sluiten en links (#wind, #zicht, …) ─────────────────────────────
 const DETAILS = {
   wind:       { titel: 'Wind',            vul: vak => vulWind(vak, 'wind'), tabs: true },
   windstoten: { titel: 'Windstoten',      vul: vak => vulWind(vak, 'windstoten'), tabs: true },
   waterstand: { titel: 'Waterstand',      vul: vulWaterstand },
   hoogwater:  { titel: 'Volgend getij',   vul: vulHoogwater },
+  golven:     { titel: 'Golven',          vul: vak => vulGolven(vak) },
   zicht:      { titel: 'Zicht',           vul: vulZicht },
   luchtdruk:  { titel: 'Luchtdruk',       vul: vulLuchtdruk },
 };
@@ -3096,7 +3176,9 @@ function startDataFeeds() {
   fetchWeather();
   fetchMarifoon();
   fetchGetijden();
+  fetchGolven();
   setInterval(fetchWeather,   10 * 60 * 1000);
+  setInterval(fetchGolven,    10 * 60 * 1000);
   setInterval(fetchMarifoon,  60 * 60 * 1000);
   setInterval(fetchGetijden,  30 * 60 * 1000);
 }
