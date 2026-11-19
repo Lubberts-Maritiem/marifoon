@@ -369,25 +369,45 @@
   .kanaal.active .kanaal-nr { color: var(--lm-accent); }
 
   /* Getij */
-  .getij-aftel { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
-  .getij-aftel span:first-child { color: var(--lm-label); }
-  .getij-aftel b { font-size: 26px; font-weight: 700; }
-  .getij-grafiek svg { width: 100%; height: auto; display: block; }
-  .curve-lijn   { fill: none; stroke: var(--lm-zee); stroke-width: 2.5; stroke-linejoin: round; }
-  .curve-raster { stroke: var(--lm-vlak-2); stroke-width: 1; }
-  .curve-nap    { stroke: var(--lm-rand-2); stroke-dasharray: 3 4; }
-  .curve-kenter { fill: var(--lm-zee); }
-  .curve-nu     { stroke: var(--lm-accent); stroke-width: 1.5; }
-  .curve-nu-stip{ fill: var(--lm-accent); stroke: var(--lm-vlak); stroke-width: 2; }
-  .getij-as { display: flex; justify-content: space-between; font-size: 11px; color: var(--lm-dim); margin-top: 4px; }
-  .kenters { display: grid; grid-template-columns: repeat(auto-fit, minmax(64px, 1fr)); gap: 6px; }
-  .kenter { padding: 8px; border-radius: 8px; background: var(--lm-vlak-2); display: flex; flex-direction: column; gap: 2px; border: 1px solid transparent; }
-  .kenter span { font-size: 12px; color: var(--lm-label); }
-  .kenter b { font-weight: 700; }
-  .kenter small { font-size: 12px; font-family: 'JetBrains Mono', ui-monospace, monospace; }
-  .kenter.voorbij { opacity: 0.6; }
-  .kenter.volgend { background: var(--lm-zee-bg); border-color: var(--lm-zee-rand); }
-  .kenter.volgend span { color: var(--lm-zee-tekst); }
+  .getij-uitlezing { display: flex; flex-direction: column; gap: 2px; }
+  .getij-label { font-size: 13px; color: var(--lm-label); }
+  .getij-waarde-rij { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+  .getij-waarde { font-size: 44px; font-weight: 700; line-height: 1.05; color: var(--lm-tekst); }
+  .getij-trend { font-weight: 600; color: var(--lm-tekst); }
+  .getij-moment { font-size: 15px; font-weight: 600; color: var(--lm-tekst); }
+  .getij-bron { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--lm-label); }
+  .getij-bron-stip { width: 8px; height: 8px; border-radius: 50%; background: var(--lm-zee); flex: none; }
+  .getij-bron-stip.verwacht { background: var(--lm-accent); }
+  .getij-bron-stip.astro { background: var(--lm-dim); }
+
+  .getij-grafiek svg { width: 100%; height: auto; display: block; font-family: 'JetBrains Mono', ui-monospace, monospace; }
+  .as-lijn { stroke: var(--lm-vlak-2); stroke-width: 1; }
+  .as-lijn.nul { stroke: var(--lm-rand-2); }
+  .as-tekst { fill: var(--lm-dim); font-size: 10px; }
+  .lijn-gemeten  { fill: none; stroke: var(--lm-zee); stroke-width: 2.5; stroke-linejoin: round; }
+  .lijn-verwacht { fill: none; stroke: var(--lm-accent); stroke-width: 2.5; stroke-linejoin: round; }
+  .lijn-astro    { fill: none; stroke: var(--lm-dim); stroke-width: 1.5; stroke-dasharray: 2 3; opacity: 0.8; }
+  .nu-lijn  { stroke: var(--lm-tekst); stroke-width: 1.2; stroke-dasharray: 4 3; }
+  .nu-tekst { fill: var(--lm-tekst); font-size: 10px; font-weight: 700; }
+  .cursor-lijn { stroke: var(--lm-label); stroke-width: 1; }
+  .cursor-stip { stroke: var(--lm-vlak); stroke-width: 2; fill: var(--lm-zee); }
+  .cursor-stip.verwacht { fill: var(--lm-accent); }
+  .cursor-stip.astro { fill: var(--lm-dim); }
+
+  .getij-schuif { display: flex; align-items: center; gap: 12px; }
+  .getij-schuif input { flex: 1; min-width: 0; height: 44px; margin: 0; accent-color: var(--lm-zee); cursor: pointer; }
+  .getij-nu-knop {
+    min-height: 44px; min-width: 56px; padding: 0 14px; border-radius: 999px;
+    border: 1px solid var(--lm-rand-2); background: var(--lm-vlak-2); color: var(--lm-tekst); font-weight: 700;
+  }
+  .getij-nu-knop:hover { border-color: var(--lm-accent); }
+  .getij-nu-knop[aria-pressed="true"] { border-color: var(--lm-accent); color: var(--lm-accent); }
+  .getij-legenda { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 13px; color: var(--lm-label); }
+  .getij-legenda span { display: inline-flex; align-items: center; gap: 6px; }
+  .getij-legenda i { display: inline-block; width: 16px; height: 3px; border-radius: 2px; }
+  .lg-gemeten  { background: var(--lm-zee); }
+  .lg-verwacht { background: var(--lm-accent); }
+  .lg-astro    { height: 0 !important; border-top: 2px dotted var(--lm-dim); }
 
   .getij-tabel summary {
     min-height: 44px; border-radius: 8px; border: 1px solid var(--lm-rand-2); background: var(--lm-vlak-2);
@@ -762,15 +782,28 @@
           <h2 class="kop" id="getijKop">Getij · West-Terschelling</h2>
           <span class="pil"><span class="led" id="tijLed"></span>RWS</span>
         </div>
-        <div class="getij-aftel">
-          <span id="getijRichting">Volgend getij over</span>
-          <b class="mono" id="getijAftel">—</b>
+        <div class="getij-uitlezing">
+          <span class="getij-label">Waterhoogte</span>
+          <div class="getij-waarde-rij">
+            <span class="getij-waarde mono" id="getijWaarde">—</span>
+            <span class="eenheid">cm NAP</span>
+            <span class="getij-trend" id="getijTrend"></span>
+          </div>
+          <span class="getij-moment" id="getijMoment">Laden…</span>
+          <span class="getij-bron"><span class="getij-bron-stip" id="getijBronStip"></span><span id="getijBron">—</span></span>
         </div>
         <div class="getij-grafiek">
-          <svg id="getijCurve" viewBox="0 0 340 130" role="img" aria-label="Getijcurve vandaag"></svg>
-          <div class="getij-as mono" aria-hidden="true"><span>00</span><span>06</span><span>12</span><span>18</span><span>24</span></div>
+          <svg id="getijCurve" viewBox="0 0 340 192" role="img" aria-label="Waterhoogte West-Terschelling van anderhalve dag terug tot drie dagen vooruit: gemeten, verwachting van Rijkswaterstaat en het astronomisch getij."></svg>
         </div>
-        <div class="kenters" id="getijKenters"></div>
+        <div class="getij-schuif">
+          <input type="range" id="getijSchuif" min="0" max="0" step="1" value="0" aria-label="Tijdstip in de getijgrafiek">
+          <button type="button" class="getij-nu-knop" id="getijNuKnop">Nu</button>
+        </div>
+        <div class="getij-legenda" aria-hidden="true">
+          <span><i class="lg-gemeten"></i>gemeten</span>
+          <span><i class="lg-verwacht"></i>verwachting RWS</span>
+          <span><i class="lg-astro"></i>alleen getij</span>
+        </div>
         <details class="getij-tabel">
           <summary>Getijtabel komende 4 dagen</summary>
           <div class="tabel-vak">
@@ -1440,8 +1473,6 @@ function renderGetijden(rows, stand) {
     getijVolgend = null;
   }
   werkGetijAftelBij();
-  tekenGetijCurve();
-  vulKenters(rows, nextIdx);
 
   const tbody = document.getElementById('tijBody');
   tbody.innerHTML = rows.map((r,i) => {
@@ -1478,66 +1509,215 @@ function getijNiveau(ms) {
   return null;
 }
 
-function tekenGetijCurve() {
-  const svg = document.getElementById('getijCurve');
-  if (!svg) return;
-  const nu    = new Date();
-  const start = new Date(nu.getFullYear(), nu.getMonth(), nu.getDate()).getTime();
-  const W = 340, H = 130;
+// ── Getijgrafiek over meerdere dagen ─────────────────────────────────────────
+// Gemeten (verleden), verwachting van Rijkswaterstaat (toekomst) en gestippeld
+// het astronomische getij zonder opzet, met een schuifbalk om door de tijd te
+// gaan. Reeksen zijn [tijd in ms, cm NAP] per 10 minuten.
+const GETIJ_STAP = 10 * 60 * 1000;
+let getijReeksen = null;
+let getijActueel = null;   // laatste meting: { ms, cm, bron }
+let getijKeuze   = null;   // gekozen moment in ms, null betekent "nu"
+let getijVenster = null;   // { start, eind } van de grafiek
 
-  const punten = [];
-  for (let m = 0; m <= 1440; m += 15) {
-    const v = getijNiveau(start + m * 60000);
-    if (v != null) punten.push([m, v]);
+function reeksUitExtremen() {
+  if (!getijExtremen.length) return [];
+  const uit = [];
+  const van = getijExtremen[0].t, tot = getijExtremen[getijExtremen.length - 1].t;
+  for (let t = Math.ceil(van / GETIJ_STAP) * GETIJ_STAP; t <= tot; t += GETIJ_STAP) {
+    const v = getijNiveau(t);
+    if (v != null) uit.push([t, Math.round(v)]);
   }
-  if (punten.length < 2) { svg.innerHTML = ''; return; }
+  return uit;
+}
 
-  const waarden = punten.map(p => p[1]);
-  let lo = Math.min(...waarden), hi = Math.max(...waarden);
-  const marge = (hi - lo) * 0.12 || 10;
-  lo -= marge; hi += marge;
-  const X = m => (m / 1440 * W).toFixed(1);
-  const Y = v => (8 + (hi - v) / (hi - lo) * (H - 16)).toFixed(1);
+function waardeOp(reeks, ms) {
+  if (!reeks || reeks.length < 2) return null;
+  if (ms < reeks[0][0] || ms > reeks[reeks.length - 1][0]) return null;
+  let lo = 0, hi = reeks.length - 1;
+  while (hi - lo > 1) {
+    const mid = (lo + hi) >> 1;
+    if (reeks[mid][0] <= ms) lo = mid; else hi = mid;
+  }
+  const a = reeks[lo], b = reeks[hi];
+  if (b[0] === a[0]) return a[1];
+  return a[1] + (b[1] - a[1]) * (ms - a[0]) / (b[0] - a[0]);
+}
+
+function berekenGetijVenster() {
+  const r = getijReeksen, nu = Date.now();
+  let min = Infinity, max = -Infinity;
+  for (const k of ['gemeten', 'verwacht', 'astronomisch']) {
+    if (!r[k].length) continue;
+    min = Math.min(min, r[k][0][0]);
+    max = Math.max(max, r[k][r[k].length - 1][0]);
+  }
+  if (!Number.isFinite(min)) return null;
+  return { start: Math.max(min, nu - 36 * 3600000), eind: Math.min(max, nu + 72 * 3600000) };
+}
+
+// Waarde en soort op een moment: gemeten voor het verleden, de verwachting
+// zolang die er is, en daarna alleen het astronomische getij.
+function getijOp(ms) {
+  const r = getijReeksen, nu = Date.now();
+  if (!r) return null;
+  if (ms >= nu - GETIJ_STAP / 2 && ms <= nu + GETIJ_STAP / 2) {
+    if (getijActueel) return { cm: getijActueel.cm, soort: 'gemeten', nu: true };
+    const v = waardeOp(r.gemeten, ms) ?? waardeOp(r.verwacht, ms);
+    if (v != null) return { cm: v, soort: 'gemeten', nu: true };
+  }
+  if (ms < nu) {
+    const v = waardeOp(r.gemeten, ms);
+    if (v != null) return { cm: v, soort: 'gemeten' };
+  }
+  let v = waardeOp(r.verwacht, ms);
+  if (v != null) return { cm: v, soort: 'verwacht' };
+  v = waardeOp(r.astronomisch, ms);
+  if (v != null) return { cm: v, soort: 'astro' };
+  return null;
+}
+
+function getijRichtingOp(ms) {
+  const r = getijReeksen, nu = Date.now(), half = 30 * 60000;
+  if (ms < nu - GETIJ_STAP) {
+    const a = waardeOp(r.gemeten, ms - half), b = waardeOp(r.gemeten, ms);
+    if (a != null && b != null) return Math.sign(b - a);
+  }
+  const model = t => waardeOp(r.verwacht, t) ?? waardeOp(r.astronomisch, t);
+  const a = model(ms), b = model(ms + half);
+  if (a == null || b == null) return 0;
+  return Math.sign(b - a);
+}
+
+function zetGetijSchuif() {
+  const schuif = document.getElementById('getijSchuif');
+  if (!schuif || !getijReeksen) return;
+  getijVenster = berekenGetijVenster();
+  if (!getijVenster) return;
+  const stappen = Math.round((getijVenster.eind - getijVenster.start) / GETIJ_STAP);
+  schuif.max = String(stappen);
+  const moment = getijKeuze ?? Date.now();
+  schuif.value = String(Math.round((moment - getijVenster.start) / GETIJ_STAP));
+}
+
+function tekenGetij() {
+  const svg = document.getElementById('getijCurve');
+  if (!svg || !getijReeksen) return;
+  getijVenster = berekenGetijVenster();
+  if (!getijVenster || !(getijVenster.eind > getijVenster.start)) { svg.innerHTML = ''; return; }
+
+  const { start, eind } = getijVenster;
+  const nu = Date.now();
+  const L = 32, R = 334, T = 12, B = 168;
+  const X = ms => L + (ms - start) / (eind - start) * (R - L);
+  const r = getijReeksen;
+  const binnen = p => p[0] >= start && p[0] <= eind;
+
+  const gemeten  = r.gemeten.filter(p => binnen(p) && p[0] <= nu);
+  const verwacht = r.verwacht.filter(p => binnen(p) && p[0] >= nu - GETIJ_STAP);
+  const astro    = r.astronomisch.filter(binnen);
+
+  const waarden = [...gemeten, ...verwacht, ...astro].map(p => p[1]);
+  if (!waarden.length) { svg.innerHTML = ''; return; }
+  const lo = Math.floor((Math.min(...waarden) - 10) / 50) * 50;
+  const hi = Math.ceil((Math.max(...waarden) + 10) / 50) * 50;
+  const Y = v => T + (hi - v) / (hi - lo) * (B - T);
+  const pad = pts => pts.length < 2 ? '' : 'M' + pts.map(p => X(p[0]).toFixed(1) + ',' + Y(p[1]).toFixed(1)).join(' L');
 
   let s = '';
-  [360, 720, 1080].forEach(m => { s += `<line class="curve-raster" x1="${X(m)}" y1="0" x2="${X(m)}" y2="${H}"/>`; });
-  if (lo < 0 && hi > 0) s += `<line class="curve-nap" x1="0" y1="${Y(0)}" x2="${W}" y2="${Y(0)}"/>`;
-  s += `<path class="curve-lijn" d="M${punten.map(p => X(p[0]) + ',' + Y(p[1])).join(' L')}"/>`;
+  for (let v = lo; v <= hi; v += 50) {
+    const y = Y(v).toFixed(1);
+    s += `<line class="as-lijn${v === 0 ? ' nul' : ''}" x1="${L}" y1="${y}" x2="${R}" y2="${y}"/>`;
+    s += `<text class="as-tekst" x="${L - 5}" y="${(Y(v) + 3.5).toFixed(1)}" text-anchor="end">${v}</text>`;
+  }
+  const dag = new Date(start);
+  dag.setHours(24, 0, 0, 0);
+  for (; dag.getTime() < eind; dag.setDate(dag.getDate() + 1)) {
+    const x = X(dag.getTime());
+    const naam = dag.toLocaleDateString('nl-NL', { weekday: 'short' }).replace('.', '');
+    s += `<line class="as-lijn" x1="${x.toFixed(1)}" y1="${T}" x2="${x.toFixed(1)}" y2="${B}"/>`;
+    if (x < R - 14) s += `<text class="as-tekst" x="${(x + 3).toFixed(1)}" y="${B + 16}">${naam}</text>`;
+  }
 
-  getijExtremen
-    .filter(e => e.t >= start && e.t <= start + 86400000)
-    .forEach(e => { s += `<circle class="curve-kenter" cx="${X((e.t - start) / 60000)}" cy="${Y(e.val)}" r="3.5"/>`; });
+  s += `<path class="lijn-astro" d="${pad(astro)}"/>`;
+  s += `<path class="lijn-gemeten" d="${pad(gemeten)}"/>`;
+  s += `<path class="lijn-verwacht" d="${pad(verwacht)}"/>`;
 
-  const nuMin = (nu.getTime() - start) / 60000;
-  const nuV = getijNiveau(nu.getTime());
-  if (nuV != null) {
-    s += `<line class="curve-nu" x1="${X(nuMin)}" y1="0" x2="${X(nuMin)}" y2="${H}"/>`;
-    s += `<circle class="curve-nu-stip" cx="${X(nuMin)}" cy="${Y(nuV)}" r="5"/>`;
+  const xn = X(nu).toFixed(1);
+  s += `<line class="nu-lijn" x1="${xn}" y1="${T - 6}" x2="${xn}" y2="${B}"/>`;
+  s += `<text class="nu-tekst" x="${(X(nu) + 3).toFixed(1)}" y="${T - 1}">nu</text>`;
+
+  const moment = getijKeuze ?? nu;
+  const info = getijOp(moment);
+  if (info) {
+    const xc = X(moment).toFixed(1), yc = Y(info.cm).toFixed(1);
+    if (getijKeuze != null) s += `<line class="cursor-lijn" x1="${xc}" y1="${T}" x2="${xc}" y2="${B}"/>`;
+    s += `<circle class="cursor-stip ${info.soort}" cx="${xc}" cy="${yc}" r="5"/>`;
   }
   svg.innerHTML = s;
+  vulGetijUitlezing(moment, info);
 }
 
-function vulKenters(rows, nextIdx) {
-  const vak = document.getElementById('getijKenters');
-  if (!vak) return;
-  const vandaag = new Date().toDateString();
-  const nu = Date.now();
-  vak.innerHTML = rows
-    .map((r, i) => ({ r, i }))
-    .filter(({ r }) => r.t.toDateString() === vandaag)
-    .map(({ r, i }) => {
-      const cls = 'kenter' + (r.t.getTime() < nu ? ' voorbij' : '') + (i === nextIdx ? ' volgend' : '');
-      const tijd = r.t.toLocaleTimeString('nl-NL', { hour:'2-digit', minute:'2-digit', timeZone:'Europe/Amsterdam' });
-      return `<div class="${cls}"><span>${r.type === 'hoog' ? 'HW' : 'LW'}</span><b>${tijd}</b><small>${r.val >= 0 ? '+' : ''}${r.val}</small></div>`;
-    }).join('');
+function vulGetijUitlezing(moment, info) {
+  const waardeEl = document.getElementById('getijWaarde');
+  if (!waardeEl) return;
+  const trendEl = document.getElementById('getijTrend');
+  const momentEl = document.getElementById('getijMoment');
+  const bronEl = document.getElementById('getijBron');
+  const stip = document.getElementById('getijBronStip');
+  const knop = document.getElementById('getijNuKnop');
+  const schuif = document.getElementById('getijSchuif');
+
+  if (!info) {
+    waardeEl.textContent = '—'; trendEl.textContent = ''; bronEl.textContent = '—';
+    return;
+  }
+  const cm = Math.round(info.cm);
+  waardeEl.textContent = (cm > 0 ? '+' : cm < 0 ? '−' : '') + Math.abs(cm);
+  const richting = getijRichtingOp(moment);
+  trendEl.textContent = richting > 0 ? '↑ stijgt' : richting < 0 ? '↓ daalt' : '';
+
+  const d = new Date(moment);
+  const wanneer =
+    d.toLocaleDateString('nl-NL', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'Europe/Amsterdam' }) + ', ' +
+    d.toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Amsterdam' });
+  const soortTekst = info.nu ? 'Nu' : info.soort === 'gemeten' ? 'Gemeten' : info.soort === 'verwacht' ? 'Verwachting' : 'Alleen getij';
+  momentEl.textContent = soortTekst + ' · ' + wanneer;
+
+  if (info.nu && getijActueel) {
+    const tijd = new Date(getijActueel.ms).toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Amsterdam' });
+    bronEl.textContent = 'Gemeten ' + tijd + (getijActueel.bron === 'waddendata' ? ' · waddendata.nl' : ' · Rijkswaterstaat');
+  } else {
+    bronEl.textContent = info.soort === 'gemeten' ? 'Gemeten · Rijkswaterstaat'
+      : info.soort === 'verwacht' ? 'Verwachting Rijkswaterstaat'
+      : 'Astronomisch getij, zonder opzet';
+  }
+  stip.className = 'getij-bron-stip' + (info.soort === 'gemeten' ? '' : ' ' + info.soort);
+  knop.setAttribute('aria-pressed', String(getijKeuze == null));
+  schuif.setAttribute('aria-valuetext', momentEl.textContent + ', ' + (cm > 0 ? '+' : '') + cm + ' cm NAP');
 }
+
+(function getijBediening() {
+  const schuif = document.getElementById('getijSchuif');
+  const knop = document.getElementById('getijNuKnop');
+  if (!schuif || !knop) return;
+  schuif.addEventListener('input', () => {
+    if (!getijVenster) return;
+    const moment = getijVenster.start + Number(schuif.value) * GETIJ_STAP;
+    // Dicht bij nu klikt de schuif vast op het actuele moment.
+    getijKeuze = Math.abs(moment - Date.now()) < GETIJ_STAP ? null : moment;
+    tekenGetij();
+  });
+  knop.addEventListener('click', () => {
+    getijKeuze = null;
+    zetGetijSchuif();
+    tekenGetij();
+  });
+})();
 
 function werkGetijAftelBij() {
-  const aftel = document.getElementById('getijAftel');
-  const richting = document.getElementById('getijRichting');
   const sub = document.getElementById('tijNextUnit');
   if (!getijVolgend) {
-    aftel.textContent = '—';
+    sub.textContent = '—';
     return;
   }
   const over = getijVolgend.t.getTime() - Date.now();
@@ -1550,12 +1730,13 @@ function werkGetijAftelBij() {
   const u = Math.floor(over / 3600000);
   const m = Math.floor((over % 3600000) / 60000);
   const duur = u + ' u ' + m + ' min';
-  const hoog = getijVolgend.type === 'hoog';
-  richting.textContent = hoog ? 'Opkomend · hoogwater over' : 'Afgaand · laagwater over';
-  aftel.textContent = duur;
   sub.textContent = (getijVolgend.val >= 0 ? '+' : '') + getijVolgend.val + ' cm · over ' + duur;
 }
-setInterval(() => { werkGetijAftelBij(); tekenGetijCurve(); }, 30 * 1000);
+setInterval(() => {
+  werkGetijAftelBij();
+  if (getijKeuze == null) zetGetijSchuif();
+  tekenGetij();
+}, 30 * 1000);
 
 async function fetchGetijden() {
   try {
@@ -1605,7 +1786,19 @@ async function fetchGetijden() {
       .map(e => ({ t: new Date(e.tijdstip).getTime(), val: e.waardeCm != null ? e.waardeCm : 0 }))
       .sort((a, b) => a.t - b.t);
 
+    // Reeksen per 10 minuten voor de grafiek. Ontbreken ze (RWS niet
+    // bereikbaar), dan een benadering uit de extremen als verwachting.
+    const rk = data.reeksen || {};
+    getijReeksen = {
+      gemeten:      Array.isArray(rk.gemeten) ? rk.gemeten : [],
+      verwacht:     Array.isArray(rk.verwacht) && rk.verwacht.length ? rk.verwacht : reeksUitExtremen(),
+      astronomisch: Array.isArray(rk.astronomisch) ? rk.astronomisch : [],
+    };
+    getijActueel = stand ? { ms: stand.tijd.getTime(), cm: stand.peil, bron: data.actueel.bron } : null;
+
     renderGetijden(rows, stand);
+    zetGetijSchuif();
+    tekenGetij();
     document.getElementById('tijLed').classList.add('rx');
     const bron = data.bronNaam === 'waddendata'
       ? 'waddendata.nl, verwacht getij inclusief opzet'
