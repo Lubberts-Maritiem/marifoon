@@ -944,7 +944,7 @@
         <button type="button" class="tegel-open" data-detail="zicht" aria-label="Zicht: details"></button>
         <div class="dtile-label">Zicht</div>
         <div class="dtile-waarde"><span class="dtile-value" id="dvVis">—</span><span class="eenheid">km</span></div>
-        <div class="dtile-unit">Station Hoorn</div>
+        <div class="dtile-unit" id="dvVisSub">KNMI Terschelling</div>
       </div>
 
       <div class="dtile" id="dtGolf">
@@ -1627,6 +1627,34 @@ function startScan() {
   }, 750);
 }
 
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// KNMI-WAARNEMING TERSCHELLING
+// Gemeten zicht van het KNMI-station, via /api/waarneming. Het zicht van
+// Open-Meteo is een modelwaarde en week sterk af van de meting.
+// ═══════════════════════════════════════════════════════════════════════════════
+const WAARNEMING_URL = '/api/waarneming?station=Terschelling';
+let zichtGemeten = false;
+let knmiWaarneming = null;
+
+async function fetchWaarneming() {
+  try {
+    const r = await fetch(WAARNEMING_URL, { cache: 'no-store' });
+    const d = await r.json();
+    if (!r.ok || d.error) throw new Error(d.error || ('status ' + r.status));
+    knmiWaarneming = d;
+    if (d.zichtM != null) {
+      zichtGemeten = true;
+      document.getElementById('dvVis').textContent = (d.zichtM / 1000).toFixed(1);
+      document.getElementById('dvVisSub').textContent =
+        'KNMI Terschelling · ' + (d.tijdstip ? tijdNL(new Date(d.tijdstip)) : '—');
+    }
+  } catch (e) {
+    console.error('fetchWaarneming:', e);
+    // Laat de laatste meting staan; zonder eerdere meting vult fetchWeather het model in.
+  }
+}
+
 // ═══════════════════════════════════════════════════════════════════════════════
 // WEERSTATION — Open-Meteo · Station Hoorn Terschelling (lat 53.392, lon 5.346)
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -1689,7 +1717,11 @@ async function fetchWeather() {
     document.getElementById('dvDir').textContent     = dirDeg + '°';
     document.getElementById('dvDirText').textContent = degToCompass(dirDeg);
     document.getElementById('dvTemp').textContent    = c.temperature_2m.toFixed(1);
-    document.getElementById('dvVis').textContent     = (c.visibility / 1000).toFixed(1);
+    // Zicht van het model alleen tonen als er geen KNMI-meting is.
+    if (!zichtGemeten) {
+      document.getElementById('dvVis').textContent    = (c.visibility / 1000).toFixed(1);
+      document.getElementById('dvVisSub').textContent = 'Open-Meteo (model)';
+    }
     document.getElementById('dvPres').textContent    = Math.round(c.pressure_msl);
     document.getElementById('dvHum').textContent     = Math.round(c.relative_humidity_2m);
 
@@ -2842,10 +2874,10 @@ function vulHoogwater(vak) {
 async function vulZicht(vak) {
   const regel = knmiBericht?.tekst?.match(/zicht[^.]*/i)?.[0];
   vak.innerHTML = `
-    ${hoofdBlok('Zicht nu', tekstVan('dvVis'), 'km', 'Station Hoorn')}
+    ${hoofdBlok('Zicht nu', tekstVan('dvVis'), 'km', tekstVan('dvVisSub'))}
     <div class="detail-sectie" id="zichtGrafiek"><span class="detail-laden">Verwachting laden…</span></div>
     ${regel ? `<div class="detail-sectie"><span class="detail-label">KNMI</span><p class="detail-tekst">${escapeHtml(regel.charAt(0).toUpperCase() + regel.slice(1))}</p></div>` : ''}
-    <span class="detail-bron">Open-Meteo, uurverwachting Hoorn Terschelling</span>`;
+    <span class="detail-bron">Meting: KNMI, station Terschelling · Verwachting: Open-Meteo (model)</span>`;
 
   const doel = vak.querySelector('#zichtGrafiek');
   try {
@@ -2855,14 +2887,14 @@ async function vulZicht(vak) {
     // Open-Meteo geeft 50 km voor onbeperkt zicht; boven 20 km afkappen.
     const laagste = laagsteIn(d.zicht, nu, tot);
     doel.innerHTML = `
-      <span class="detail-label">Komende 24 uur (km)</span>
+      <span class="detail-label">Modelverwachting komende 24 uur (km)</span>
       ${detailGrafiek({
         lijnen: [{ punten: d.zicht.map(p => [p[0], Math.min(p[1], 20)]), klasse: 'lijn-zee' }],
         van: nu, tot, yMin: 0, yMax: 20, yStap: 5, yTekst: v => v === 20 ? '20+' : v,
         grenzen: [{ waarde: 4, tekst: '4 km' }, { waarde: 1, tekst: '1 km', warn: true }],
         label: 'Zicht in kilometer, komende 24 uur',
       })}
-      ${laagste ? `<div class="detail-stats">${statTegel('Laagste komende 24 u', komma(laagste[1]) + ' km', datumNL(laagste[0]) + ' ' + uurNL(laagste[0]))}</div>` : ''}`;
+      ${laagste ? `<div class="detail-stats">${statTegel('Laagste in model, 24 u', komma(laagste[1]) + ' km', datumNL(laagste[0]) + ' ' + uurNL(laagste[0]))}</div>` : ''}`;
   } catch (e) {
     console.error('Zicht-detail:', e);
     doel.innerHTML = foutBlok();
@@ -3177,7 +3209,9 @@ function startDataFeeds() {
   fetchMarifoon();
   fetchGetijden();
   fetchGolven();
+  fetchWaarneming();
   setInterval(fetchWeather,   10 * 60 * 1000);
+  setInterval(fetchWaarneming, 10 * 60 * 1000);
   setInterval(fetchGolven,    10 * 60 * 1000);
   setInterval(fetchMarifoon,  60 * 60 * 1000);
   setInterval(fetchGetijden,  30 * 60 * 1000);
