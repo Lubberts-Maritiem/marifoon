@@ -620,107 +620,106 @@
     .windy-kader { aspect-ratio: 1 / 1; }
   }
 
-  /* ── Marifoon-miniplayer ── */
-  body { padding-bottom: 112px; }
+  /* ── Marifoon-miniplayer: compacte pil rechtsonder ── */
+  body { padding-bottom: 84px; }
   .speler-houder {
     position: fixed; left: 0; right: 0; bottom: 16px; z-index: 60;
     padding: 0 16px; pointer-events: none;
   }
   .speler {
-    pointer-events: auto; max-width: 1296px; margin: 0 auto;
-    background: var(--lm-vlak); border: 1px solid var(--lm-rand-2); border-radius: 16px;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
+    pointer-events: auto; width: fit-content; max-width: 100%; margin: 0 0 0 auto;
+    background: color-mix(in srgb, var(--lm-vlak) 88%, transparent);
+    -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
+    border: 1px solid var(--lm-rand); border-radius: 999px;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
     overflow: hidden;
   }
-  .speler-balk { display: flex; align-items: center; gap: 14px; padding: 10px 14px; min-height: 72px; }
-  .speler-icoon {
-    width: 48px; height: 48px; border-radius: 12px; flex: none;
-    background: var(--lm-vlak-3); color: var(--lm-label);
-    display: inline-flex; align-items: center; justify-content: center;
+  @media (min-width: 1360px) {
+    .speler-houder { padding-right: calc((100vw - 1296px) / 2 - 8px); }
   }
-  .speler-titel { display: flex; flex-direction: column; gap: 4px; min-width: 0; margin-right: auto; }
-  .speler-naam { font-size: 17px; font-weight: 600; line-height: 1.1; color: var(--lm-tekst); }
+  .speler.open { width: min(620px, 100%); border-radius: 16px; background: var(--lm-vlak); }
+
+  .speler-balk { display: flex; align-items: center; gap: 10px; padding: 6px 8px 6px 6px; min-height: 48px; }
+  .speler-icoon { display: none; }
+  .speler-titel { display: flex; align-items: center; gap: 8px; min-width: 0; margin-right: auto; }
+  .speler-naam { font-size: 14px; font-weight: 600; line-height: 1; color: var(--lm-tekst); white-space: nowrap; }
   .speler-live {
-    align-self: flex-start; display: inline-flex; align-items: center; gap: 6px;
-    font-size: 12px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase;
-    padding: 2px 8px; border-radius: 6px; background: var(--lm-vlak-2); color: var(--lm-dim);
-    white-space: nowrap;
+    display: inline-flex; align-items: center; gap: 5px;
+    font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase;
+    color: var(--lm-dim); white-space: nowrap;
   }
-  .speler-live-stip { width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
-  .speler[data-status="live"] .speler-live { background: var(--lm-live-bg); color: var(--lm-live); }
+  .speler-live-stip { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+  .speler[data-status="live"] .speler-live { color: var(--lm-live); }
   .speler[data-status="live"] .speler-live-stip { animation: speler-puls 1.6s ease-in-out infinite; }
-  .speler[data-status="wachten"] .speler-live { background: var(--lm-accent-bg); color: var(--lm-accent); }
-  .speler[data-status="fout"] .speler-live { background: var(--lm-warn-bg); color: var(--lm-warn); }
+  .speler[data-status="wachten"] .speler-live { color: var(--lm-accent); }
+  .speler[data-status="fout"] .speler-live { color: var(--lm-warn); }
   @keyframes speler-puls { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
   @media (prefers-reduced-motion: reduce) { .speler-live-stip { animation: none !important; } }
 
-  .speler-bediening { display: flex; align-items: center; gap: 14px; flex: none; }
+  .speler-bediening { display: flex; align-items: center; gap: 4px; flex: none; }
   .speler-play {
-    width: 52px; height: 52px; border-radius: 50%; border: 0; flex: none;
+    width: 36px; height: 36px; border-radius: 50%; border: 0; flex: none;
     background: var(--lm-accent); color: var(--lm-op-accent);
     display: inline-flex; align-items: center; justify-content: center;
     transition: transform 0.15s, filter 0.15s;
   }
+  .speler-play svg { width: 16px; height: 16px; }
   .speler-play:hover { filter: brightness(1.08); }
-  .speler-play:active { transform: scale(0.96); }
+  .speler-play:active { transform: scale(0.95); }
   .speler-play .ico-pauze { display: none; }
   .speler[data-status="live"] .speler-play .ico-play,
   .speler[data-status="wachten"] .speler-play .ico-play { display: none; }
   .speler[data-status="live"] .speler-play .ico-pauze,
   .speler[data-status="wachten"] .speler-play .ico-pauze { display: block; }
 
-  .speler-volume {
-    display: grid; grid-template-columns: auto 1fr; grid-template-rows: auto auto;
-    column-gap: 6px; align-items: center; padding-left: 14px; border-left: 1px solid var(--lm-rand);
+  .speler-volume { display: flex; align-items: center; gap: 2px; margin-left: 6px; }
+  .speler-volume-label {
+    position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap;
   }
-  .speler-volume-label { grid-column: 2; font-size: 12px; color: var(--lm-label); }
   .speler-demp {
-    grid-row: 2; width: 36px; height: 36px; border: 0; border-radius: 8px; background: transparent;
-    color: var(--lm-tekst); display: inline-flex; align-items: center; justify-content: center;
+    width: 32px; height: 32px; border: 0; border-radius: 8px; background: transparent;
+    color: var(--lm-label); display: inline-flex; align-items: center; justify-content: center;
   }
-  .speler-demp:hover { background: var(--lm-vlak-2); }
+  .speler-demp svg { width: 18px; height: 18px; }
+  .speler-demp:hover { color: var(--lm-tekst); background: var(--lm-vlak-2); }
   .speler-demp .kruis { display: none; }
   .speler-demp[data-niveau="uit"] .golf-1, .speler-demp[data-niveau="uit"] .golf-2 { display: none; }
   .speler-demp[data-niveau="uit"] .kruis { display: inline; }
   .speler-demp[data-niveau="laag"] .golf-2 { display: none; }
-  .speler-volume input {
-    grid-row: 2; width: 120px; height: 36px; margin: 0; cursor: pointer; accent-color: var(--lm-accent);
-  }
+  .speler-volume input { width: 72px; height: 28px; margin: 0; cursor: pointer; accent-color: var(--lm-accent); }
   .speler-uitklap, .speler-knop-rond {
-    width: 44px; height: 44px; border-radius: 10px; border: 1px solid transparent; background: transparent;
-    color: var(--lm-tekst); display: inline-flex; align-items: center; justify-content: center; flex: none;
+    width: 32px; height: 32px; border-radius: 8px; border: 1px solid transparent; background: transparent;
+    color: var(--lm-label); display: inline-flex; align-items: center; justify-content: center; flex: none;
   }
-  .speler-uitklap:hover, .speler-knop-rond:hover { background: var(--lm-vlak-2); border-color: var(--lm-rand); }
-  .speler-uitklap svg { transition: transform 0.2s; }
+  .speler-uitklap svg { width: 18px; height: 18px; transition: transform 0.2s; }
+  .speler-uitklap:hover, .speler-knop-rond:hover { color: var(--lm-tekst); background: var(--lm-vlak-2); }
   .speler-uitklap[aria-expanded="true"] svg { transform: rotate(180deg); }
+  .speler-knop-rond { width: 40px; height: 40px; }
 
   .speler-paneel {
-    display: flex; flex-direction: column; gap: 14px; padding: 16px 16px 14px;
-    border-bottom: 1px solid var(--lm-rand); max-height: min(60vh, 460px); overflow-y: auto;
+    display: flex; flex-direction: column; gap: 12px; padding: 14px 14px 12px;
+    border-bottom: 1px solid var(--lm-rand); max-height: min(60vh, 440px); overflow-y: auto;
     animation: speler-open 0.18s ease-out;
   }
   @keyframes speler-open { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
   .speler-paneel-kop { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-  .speler-paneel .kanalen { grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); }
-  .speler-noot { font-size: 13px; color: var(--lm-dim); }
+  .speler-paneel .kop { font-size: 16px; }
+  .speler-paneel .vhf-display { padding: 10px 12px; gap: 14px; }
+  .speler-paneel .vhf-kanaal { font-size: 40px; }
+  .speler-paneel .vhf-naam { font-size: 16px; }
+  .speler-paneel .kanalen { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); }
+  .speler-paneel .kanaal { min-height: 38px; font-size: 12px; }
+  .speler-noot { font-size: 12px; color: var(--lm-dim); }
 
   @media (max-width: 768px) {
-    body { padding-bottom: 168px; }
+    body { padding-bottom: 136px; }
     .speler-houder { bottom: calc(76px + env(safe-area-inset-bottom)); padding: 0 10px; }
-    .speler-balk { gap: 10px; padding: 8px 10px; min-height: 60px; }
-    .speler-icoon { width: 40px; height: 40px; border-radius: 10px; }
-    .speler-naam { font-size: 15px; }
-    .speler-bediening { gap: 6px; }
-    .speler-play { width: 46px; height: 46px; }
-    .speler-volume { padding-left: 6px; border-left: 0; display: flex; }
-    .speler-volume-label, .speler-volume input { display: none; }
-    .speler-demp { width: 44px; height: 44px; }
-    .speler-paneel { max-height: min(55vh, 420px); padding: 14px 12px 12px; }
+    .speler-volume input { display: none; }
+    .speler-play { width: 40px; height: 40px; }
+    .speler-demp, .speler-uitklap { width: 40px; height: 40px; }
+    .speler.open { width: 100%; }
+    .speler-paneel { max-height: min(55vh, 420px); padding: 12px 12px 10px; }
     .speler-paneel .kanalen { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-    .speler-paneel .vhf-kanaal { font-size: 44px; }
-  }
-  @media (max-width: 360px) {
-    .speler-icoon { display: none; }
   }
 
   audio { display: none; }
@@ -1209,15 +1208,15 @@
       <span class="speler-icoon" aria-hidden="true">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21V10"/><circle cx="12" cy="7" r="2"/><path d="M7.5 3a7 7 0 0 0 0 8"/><path d="M16.5 3a7 7 0 0 1 0 8"/><path d="M9 21h6"/></svg>
       </span>
+      <button type="button" class="speler-play" id="spelerPlay" aria-label="Marifoon afspelen" aria-pressed="false">
+          <svg class="ico-play" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5.5v13a1 1 0 0 0 1.5.86l10.4-6.5a1 1 0 0 0 0-1.72L9.5 4.64A1 1 0 0 0 8 5.5z"/></svg>
+          <svg class="ico-pauze" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="6.5" y="5" width="4" height="14" rx="1.2"/><rect x="13.5" y="5" width="4" height="14" rx="1.2"/></svg>
+        </button>
       <div class="speler-titel">
         <span class="speler-naam">Marifoon</span>
         <span class="speler-live" id="spelerLive" aria-live="polite"><span class="speler-live-stip"></span><span id="spelerLiveTekst">Uit</span></span>
       </div>
       <div class="speler-bediening">
-        <button type="button" class="speler-play" id="spelerPlay" aria-label="Marifoon afspelen" aria-pressed="false">
-          <svg class="ico-play" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5.5v13a1 1 0 0 0 1.5.86l10.4-6.5a1 1 0 0 0 0-1.72L9.5 4.64A1 1 0 0 0 8 5.5z"/></svg>
-          <svg class="ico-pauze" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="6.5" y="5" width="4" height="14" rx="1.2"/><rect x="13.5" y="5" width="4" height="14" rx="1.2"/></svg>
-        </button>
         <div class="speler-volume">
           <button type="button" class="speler-demp" id="spelerDemp" aria-label="Geluid uit" aria-pressed="false" data-niveau="hoog">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -2392,6 +2391,7 @@ function bewaardVolume() {
   // Uitklappen verandert alleen de weergave, de audio loopt gewoon door.
   const zetOpen = (open, focus) => {
     paneel.hidden = !open;
+    speler.classList.toggle('open', open);
     uitklap.setAttribute('aria-expanded', String(open));
     uitklap.setAttribute('aria-label', open ? 'Kanalen en status verbergen' : 'Kanalen en status tonen');
     if (open && focus) sluit.focus();
