@@ -514,6 +514,109 @@
 
   .tabbalk { display: none; }
 
+  /* ── Marifoon-miniplayer ── */
+  body { padding-bottom: 112px; }
+  .speler-houder {
+    position: fixed; left: 0; right: 0; bottom: 16px; z-index: 60;
+    padding: 0 16px; pointer-events: none;
+  }
+  .speler {
+    pointer-events: auto; max-width: 1296px; margin: 0 auto;
+    background: var(--lm-vlak); border: 1px solid var(--lm-rand-2); border-radius: 16px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
+    overflow: hidden;
+  }
+  .speler-balk { display: flex; align-items: center; gap: 14px; padding: 10px 14px; min-height: 72px; }
+  .speler-icoon {
+    width: 48px; height: 48px; border-radius: 12px; flex: none;
+    background: var(--lm-vlak-3); color: var(--lm-label);
+    display: inline-flex; align-items: center; justify-content: center;
+  }
+  .speler-titel { display: flex; flex-direction: column; gap: 4px; min-width: 0; margin-right: auto; }
+  .speler-naam { font-size: 17px; font-weight: 600; line-height: 1.1; color: var(--lm-tekst); }
+  .speler-live {
+    align-self: flex-start; display: inline-flex; align-items: center; gap: 6px;
+    font-size: 12px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase;
+    padding: 2px 8px; border-radius: 6px; background: var(--lm-vlak-2); color: var(--lm-dim);
+    white-space: nowrap;
+  }
+  .speler-live-stip { width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+  .speler[data-status="live"] .speler-live { background: var(--lm-live-bg); color: var(--lm-live); }
+  .speler[data-status="live"] .speler-live-stip { animation: speler-puls 1.6s ease-in-out infinite; }
+  .speler[data-status="wachten"] .speler-live { background: var(--lm-accent-bg); color: var(--lm-accent); }
+  .speler[data-status="fout"] .speler-live { background: var(--lm-warn-bg); color: var(--lm-warn); }
+  @keyframes speler-puls { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
+  @media (prefers-reduced-motion: reduce) { .speler-live-stip { animation: none !important; } }
+
+  .speler-bediening { display: flex; align-items: center; gap: 14px; flex: none; }
+  .speler-play {
+    width: 52px; height: 52px; border-radius: 50%; border: 0; flex: none;
+    background: var(--lm-accent); color: var(--lm-op-accent);
+    display: inline-flex; align-items: center; justify-content: center;
+    transition: transform 0.15s, filter 0.15s;
+  }
+  .speler-play:hover { filter: brightness(1.08); }
+  .speler-play:active { transform: scale(0.96); }
+  .speler-play .ico-pauze { display: none; }
+  .speler[data-status="live"] .speler-play .ico-play,
+  .speler[data-status="wachten"] .speler-play .ico-play { display: none; }
+  .speler[data-status="live"] .speler-play .ico-pauze,
+  .speler[data-status="wachten"] .speler-play .ico-pauze { display: block; }
+
+  .speler-volume {
+    display: grid; grid-template-columns: auto 1fr; grid-template-rows: auto auto;
+    column-gap: 6px; align-items: center; padding-left: 14px; border-left: 1px solid var(--lm-rand);
+  }
+  .speler-volume-label { grid-column: 2; font-size: 12px; color: var(--lm-label); }
+  .speler-demp {
+    grid-row: 2; width: 36px; height: 36px; border: 0; border-radius: 8px; background: transparent;
+    color: var(--lm-tekst); display: inline-flex; align-items: center; justify-content: center;
+  }
+  .speler-demp:hover { background: var(--lm-vlak-2); }
+  .speler-demp .kruis { display: none; }
+  .speler-demp[data-niveau="uit"] .golf-1, .speler-demp[data-niveau="uit"] .golf-2 { display: none; }
+  .speler-demp[data-niveau="uit"] .kruis { display: inline; }
+  .speler-demp[data-niveau="laag"] .golf-2 { display: none; }
+  .speler-volume input {
+    grid-row: 2; width: 120px; height: 36px; margin: 0; cursor: pointer; accent-color: var(--lm-accent);
+  }
+  .speler-uitklap, .speler-knop-rond {
+    width: 44px; height: 44px; border-radius: 10px; border: 1px solid transparent; background: transparent;
+    color: var(--lm-tekst); display: inline-flex; align-items: center; justify-content: center; flex: none;
+  }
+  .speler-uitklap:hover, .speler-knop-rond:hover { background: var(--lm-vlak-2); border-color: var(--lm-rand); }
+  .speler-uitklap svg { transition: transform 0.2s; }
+  .speler-uitklap[aria-expanded="true"] svg { transform: rotate(180deg); }
+
+  .speler-paneel {
+    display: flex; flex-direction: column; gap: 14px; padding: 16px 16px 14px;
+    border-bottom: 1px solid var(--lm-rand); max-height: min(60vh, 460px); overflow-y: auto;
+    animation: speler-open 0.18s ease-out;
+  }
+  @keyframes speler-open { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+  .speler-paneel-kop { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  .speler-paneel .kanalen { grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); }
+  .speler-noot { font-size: 13px; color: var(--lm-dim); }
+
+  @media (max-width: 768px) {
+    body { padding-bottom: 168px; }
+    .speler-houder { bottom: calc(76px + env(safe-area-inset-bottom)); padding: 0 10px; }
+    .speler-balk { gap: 10px; padding: 8px 10px; min-height: 60px; }
+    .speler-icoon { width: 40px; height: 40px; border-radius: 10px; }
+    .speler-naam { font-size: 15px; }
+    .speler-bediening { gap: 6px; }
+    .speler-play { width: 46px; height: 46px; }
+    .speler-volume { padding-left: 6px; border-left: 0; display: flex; }
+    .speler-volume-label, .speler-volume input { display: none; }
+    .speler-demp { width: 44px; height: 44px; }
+    .speler-paneel { max-height: min(55vh, 420px); padding: 14px 12px 12px; }
+    .speler-paneel .kanalen { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .speler-paneel .vhf-kanaal { font-size: 44px; }
+  }
+  @media (max-width: 360px) {
+    .speler-icoon { display: none; }
+  }
+
   audio { display: none; }
 
   /* ── Tablet en mobiel: één kolom in de volgorde van het mobiele ontwerp ── */
@@ -524,7 +627,6 @@
     #getij     { order: 3; }
     #camera    { order: 4; }
     #ais       { order: 5; }
-    #marifoon  { order: 6; }
     #weer      { order: 7; }
     #extraKnop { order: 8; }
     #extraPanelen { order: 9; }
@@ -540,7 +642,7 @@
     .klok-tijd { font-size: 15px; }
     .merk-naam { font-size: 16px; letter-spacing: 0.03em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .merk > span { min-width: 0; }
-    .inhoud { padding: 14px 16px 104px; gap: 16px; }
+    .inhoud { padding: 14px 16px 16px; gap: 16px; }
     .nu-raster { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
     .nu .dtile { padding: 12px 14px; gap: 4px; }
     .nu .dtile-value { font-size: 32px; }
@@ -551,7 +653,7 @@
     .waarschuwing { padding: 12px 14px; }
     .waarschuwing a { display: none; }
     .golfkaart { grid-template-columns: 1fr 1fr; }
-    footer.voet { padding: 0 16px 96px; }
+    footer.voet { padding: 0 16px 16px; }
 
     .tabbalk {
       display: grid; grid-template-columns: repeat(5, minmax(0, 1fr));
@@ -753,29 +855,6 @@
 
     <div class="kolom-zij">
 
-      <!-- ═══════════════════════════ MARIFOON ═══════════════════════════ -->
-      <section class="paneel" id="marifoon" aria-labelledby="vhfKop">
-        <div class="paneel-kop">
-          <h2 class="kop" id="vhfKop">Marifoon</h2>
-        </div>
-        <div class="vhf-display">
-          <div class="vhf-links">
-            <span class="vhf-label">Kanaal</span>
-            <span class="vhf-kanaal" id="chDisplay">02</span>
-          </div>
-          <div class="vhf-info">
-            <span class="vhf-naam" id="chName">VC Brandaris</span>
-            <div class="vhf-chips">
-              <span class="chip"><span class="led pwr"></span>PWR</span>
-              <span class="chip"><span class="led rx" id="ledRx"></span>RX</span>
-              <span class="chip"><span class="led" id="ledTx"></span>TX</span>
-              <span class="chip scan-status-badge" id="scanBadge">● Standby</span>
-            </div>
-          </div>
-        </div>
-        <ul class="kanalen" id="scanList" aria-label="Scanlijst"></ul>
-      </section>
-
       <!-- ═══════════════════════════ GETIJ ═══════════════════════════ -->
       <section class="paneel" id="getij" aria-labelledby="getijKop">
         <div class="paneel-kop">
@@ -964,6 +1043,72 @@
   <span>Lubberts Maritiem · VHF Marine Radio Network · Terschelling</span>
 </footer>
 
+<!-- ═══════════════════════════ MARIFOON-MINIPLAYER ═══════════════════════════
+     Vast onderin beeld. Alleen presentatie en bediening: de audio zelf blijft
+     het ene <audio>-element uit startAudio(), dus één stream en één verbinding. -->
+<div class="speler-houder">
+  <section class="speler" id="speler" data-status="standby" aria-label="Marifoon">
+
+    <div class="speler-paneel" id="spelerPaneel" hidden>
+      <div class="speler-paneel-kop">
+        <h2 class="kop">Marifoon · scanlijst</h2>
+        <button type="button" class="speler-knop-rond" id="spelerSluit" aria-label="Uitgebreide bediening sluiten">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12"/><path d="M18 6 6 18"/></svg>
+        </button>
+      </div>
+      <div class="vhf-display">
+        <div class="vhf-links">
+          <span class="vhf-label">Kanaal</span>
+          <span class="vhf-kanaal" id="chDisplay">02</span>
+        </div>
+        <div class="vhf-info">
+          <span class="vhf-naam" id="chName">VC Brandaris</span>
+          <div class="vhf-chips">
+            <span class="chip"><span class="led pwr"></span>PWR</span>
+            <span class="chip"><span class="led rx" id="ledRx"></span>RX</span>
+            <span class="chip"><span class="led" id="ledTx"></span>TX</span>
+            <span class="chip scan-status-badge" id="scanBadge">● Standby</span>
+          </div>
+        </div>
+      </div>
+      <ul class="kanalen" id="scanList" aria-label="Scanlijst"></ul>
+      <p class="speler-noot">De scanner loopt automatisch langs deze kanalen. Je hoort één live audiostream.</p>
+    </div>
+
+    <div class="speler-balk">
+      <span class="speler-icoon" aria-hidden="true">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21V10"/><circle cx="12" cy="7" r="2"/><path d="M7.5 3a7 7 0 0 0 0 8"/><path d="M16.5 3a7 7 0 0 1 0 8"/><path d="M9 21h6"/></svg>
+      </span>
+      <div class="speler-titel">
+        <span class="speler-naam">Marifoon</span>
+        <span class="speler-live" id="spelerLive" aria-live="polite"><span class="speler-live-stip"></span><span id="spelerLiveTekst">Uit</span></span>
+      </div>
+      <div class="speler-bediening">
+        <button type="button" class="speler-play" id="spelerPlay" aria-label="Marifoon afspelen" aria-pressed="false">
+          <svg class="ico-play" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5.5v13a1 1 0 0 0 1.5.86l10.4-6.5a1 1 0 0 0 0-1.72L9.5 4.64A1 1 0 0 0 8 5.5z"/></svg>
+          <svg class="ico-pauze" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="6.5" y="5" width="4" height="14" rx="1.2"/><rect x="13.5" y="5" width="4" height="14" rx="1.2"/></svg>
+        </button>
+        <div class="speler-volume">
+          <button type="button" class="speler-demp" id="spelerDemp" aria-label="Geluid uit" aria-pressed="false" data-niveau="hoog">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z" fill="currentColor" stroke="none"/>
+              <path class="golf-1" d="M15.5 9.5a3.5 3.5 0 0 1 0 5"/>
+              <path class="golf-2" d="M18.5 7a7 7 0 0 1 0 10"/>
+              <path class="kruis" d="M16 9.5l5 5M21 9.5l-5 5"/>
+            </svg>
+          </button>
+          <label class="speler-volume-label" for="spelerVolume">Volume</label>
+          <input type="range" id="spelerVolume" min="0" max="100" step="1" value="80">
+        </div>
+        <button type="button" class="speler-uitklap" id="spelerUitklap" aria-expanded="false" aria-controls="spelerPaneel" aria-label="Kanalen en status tonen">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 15 6-6 6 6"/></svg>
+        </button>
+      </div>
+    </div>
+
+  </section>
+</div>
+
 <!-- Mobiele tabbalk -->
 <nav class="tabbalk" aria-label="Hoofdmenu">
   <a href="#nu"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>Nu</a>
@@ -1017,6 +1162,7 @@ let currentHls     = null;
 let scanIndex      = 0;
 let scanTimer      = null;
 let scanRunning    = false;
+let gebruikerGepauzeerd = false;   // true als de gebruiker zelf op pauze drukte
 
 // ── DOM refs ──────────────────────────────────────────────────────────────────
 const audioPlayer = document.getElementById('audioPlayer');
@@ -1048,8 +1194,10 @@ const ledRx       = document.getElementById('ledRx');
 })();
 
 function startAudio() {
+  if (gebruikerGepauzeerd) return;
   audioPlayer.src    = STREAM_URL;
-  audioPlayer.volume = 0.8;
+  audioPlayer.volume = bewaardVolume() / 100;
+  audioPlayer.muted  = bewaardVolume() === 0;
 
   // De RX LIVE-regel, de S-meter en de volumeknop zijn verwijderd. De enige
   // overgebleven statusplekken zijn de RX-led en de scanbadge, dus daar melden
@@ -1063,6 +1211,7 @@ function startAudio() {
   };
 
   audioPlayer.addEventListener('error', (e) => {
+    if (gebruikerGepauzeerd || !audioPlayer.getAttribute('src')) return;
     console.error('Audio stream fout:', e);
     meld('○ Geen signaal', false);
   });
@@ -1084,7 +1233,8 @@ function startAudio() {
 
   // Vrijwel elke browser blokkeert autoplay met geluid, dus de eerste klik
   // of tik waar dan ook op de pagina start de stream alsnog.
-  const onInteract = () => tryPlay();
+  // Niet als de gebruiker zelf op pauze heeft gedrukt.
+  const onInteract = () => { if (!gebruikerGepauzeerd) tryPlay(); };
   document.addEventListener('click',      onInteract, { once: true });
   document.addEventListener('touchstart', onInteract, { once: true });
 
@@ -2002,6 +2152,126 @@ async function fetchGolven() {
   }
 }
 
+
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// MARIFOON-MINIPLAYER
+// Bediening en weergave rond het bestaande <audio>-element. Er is één element
+// en dus hooguit één verbinding. Pauzeren verbreekt de verbinding, afspelen
+// maakt hem opnieuw, zodat je na een pauze weer live luistert.
+// ═══════════════════════════════════════════════════════════════════════════════
+
+function bewaardVolume() {
+  try {
+    const v = Number(localStorage.getItem('lm-volume'));
+    if (localStorage.getItem('lm-volume') !== null && Number.isFinite(v)) return Math.max(0, Math.min(100, v));
+  } catch (e) {}
+  return 80;
+}
+
+(function miniplayer() {
+  const speler   = document.getElementById('speler');
+  const playKnop = document.getElementById('spelerPlay');
+  const liveTekst = document.getElementById('spelerLiveTekst');
+  const volume   = document.getElementById('spelerVolume');
+  const demp     = document.getElementById('spelerDemp');
+  const uitklap  = document.getElementById('spelerUitklap');
+  const sluit    = document.getElementById('spelerSluit');
+  const paneel   = document.getElementById('spelerPaneel');
+  if (!speler) return;
+
+  const TEKST = { live: 'Live', wachten: 'Verbinden…', pauze: 'Gepauzeerd', fout: 'Geen signaal', standby: 'Uit' };
+  const zetStatus = status => {
+    speler.dataset.status = status;
+    liveTekst.textContent = TEKST[status] || status;
+    const speelt = status === 'live' || status === 'wachten';
+    playKnop.setAttribute('aria-pressed', String(speelt));
+    playKnop.setAttribute('aria-label', speelt ? 'Marifoon pauzeren' : 'Marifoon afspelen');
+  };
+  const scanBadge = (tekst, actief) => {
+    const b = document.getElementById('scanBadge');
+    if (b) { b.textContent = tekst; b.classList.toggle('active', actief); }
+  };
+
+  audioPlayer.addEventListener('playing', () => zetStatus('live'));
+  audioPlayer.addEventListener('waiting', () => { if (!audioPlayer.paused) zetStatus('wachten'); });
+  audioPlayer.addEventListener('pause',   () => { if (speler.dataset.status !== 'fout') zetStatus(gebruikerGepauzeerd ? 'pauze' : 'standby'); });
+  audioPlayer.addEventListener('error',   () => { if (!gebruikerGepauzeerd && audioPlayer.getAttribute('src')) zetStatus('fout'); });
+
+  playKnop.addEventListener('click', (e) => {
+    // De eerste klik op de pagina start de stream ook via startAudio. Die
+    // klik hier afvangen, zodat play en pauze niet dubbel reageren.
+    e.stopPropagation();
+    if (audioPlayer.paused) {
+      gebruikerGepauzeerd = false;
+      audioPlayer.src = STREAM_URL;
+      zetStatus('wachten');
+      Promise.resolve(audioPlayer.play()).catch(() => zetStatus('fout'));
+      scanBadge('▶ Scanning', true);
+    } else {
+      gebruikerGepauzeerd = true;
+      audioPlayer.pause();
+      audioPlayer.removeAttribute('src');
+      audioPlayer.load();
+      zetStatus('pauze');
+      scanBadge('❚❚ Gepauzeerd', false);
+    }
+  });
+
+  const toonVolume = () => {
+    const v = audioPlayer.muted ? 0 : Math.round(audioPlayer.volume * 100);
+    demp.dataset.niveau = v === 0 ? 'uit' : v < 50 ? 'laag' : 'hoog';
+    demp.setAttribute('aria-pressed', String(v === 0));
+    demp.setAttribute('aria-label', v === 0 ? 'Geluid aan' : 'Geluid uit');
+    volume.style.setProperty('--vulling', v + '%');
+  };
+  const startVolume = bewaardVolume();
+  volume.value = String(startVolume);
+  audioPlayer.volume = startVolume / 100;
+  audioPlayer.muted = startVolume === 0;
+  let laatsteVolume = startVolume || 80;
+
+  volume.addEventListener('input', () => {
+    const v = Number(volume.value);
+    audioPlayer.volume = v / 100;
+    audioPlayer.muted = v === 0;
+    if (v > 0) laatsteVolume = v;
+    try { localStorage.setItem('lm-volume', String(v)); } catch (e) {}
+    toonVolume();
+  });
+  demp.addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (audioPlayer.muted || audioPlayer.volume === 0) {
+      audioPlayer.muted = false;
+      audioPlayer.volume = laatsteVolume / 100;
+      volume.value = String(laatsteVolume);
+    } else {
+      audioPlayer.muted = true;
+      volume.value = '0';
+    }
+    try { localStorage.setItem('lm-volume', volume.value); } catch (e) {}
+    toonVolume();
+  });
+  audioPlayer.addEventListener('volumechange', toonVolume);
+  toonVolume();
+
+  // Uitklappen verandert alleen de weergave, de audio loopt gewoon door.
+  const zetOpen = (open, focus) => {
+    paneel.hidden = !open;
+    uitklap.setAttribute('aria-expanded', String(open));
+    uitklap.setAttribute('aria-label', open ? 'Kanalen en status verbergen' : 'Kanalen en status tonen');
+    if (open && focus) sluit.focus();
+    if (!open && focus) uitklap.focus();
+  };
+  uitklap.addEventListener('click', () => zetOpen(paneel.hidden, false));
+  sluit.addEventListener('click', () => zetOpen(false, true));
+  paneel.addEventListener('keydown', (e) => { if (e.key === 'Escape') zetOpen(false, true); });
+
+  // De links naar "Marifoon" in de kopbalk en de tabbalk openen nu de speler.
+  document.querySelectorAll('a[href="#marifoon"]').forEach(a => {
+    a.addEventListener('click', (e) => { e.preventDefault(); zetOpen(true, true); });
+  });
+})();
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // WEERGAVE EN BEDIENING
